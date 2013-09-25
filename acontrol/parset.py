@@ -1,3 +1,4 @@
+import time
 import datetime
 
 class Parset(dict):
@@ -176,4 +177,7 @@ class Parset(dict):
         """
         Return the value of key as an instance of datetime.datetime.
         """
-        return datetime.datetime.strptime(self.get(key), formatstring)
+        ts = time.strptime(self.get(key), formatstring)
+        return datetime.datetime(
+            ts.tm_year, ts.tm_mon, ts.tm_mday, ts.tm_hour, ts.tm_min, ts.tm_sec
+        )

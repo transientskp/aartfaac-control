@@ -17,12 +17,12 @@ EXAMPLE_PARSET = textwrap.dedent(EXAMPLE_PARSET).strip()
 
 class ParsetTestCase(unittest.TestCase):
     def setUp(self):
-        self.parset_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        self.parset_file = tempfile.NamedTemporaryFile(mode='w')
         self.parset_file.write(EXAMPLE_PARSET)
-        self.parset_file.close()
+        self.parset_file.seek(0)
 
     def tearDown(self):
-        os.unlink(self.parset_file.name)
+        self.parset_file.close()
 
     def test_getdatetime(self):
         ps = Parset()
@@ -33,9 +33,12 @@ class ParsetTestCase(unittest.TestCase):
         )
         self.assertEqual(
             ps.getDateTime('ObsSW.Observation.startTime'),
-            datetime.datetime(2013, 8, 24, 14, 18)
+            datetime.datetime(2013, 8, 24, 14, 18, 00)
         )
 
     def test_read_file(self):
         ps = Parset(self.parset_file.name)
         self.assertEqual(len(ps), 5)
+
+if __name__ == "__main__":
+	unittest.main()
