@@ -1,3 +1,5 @@
+import datetime
+
 class Parset(dict):
     """
     A pure Python parameterset parser.
@@ -5,39 +7,24 @@ class Parset(dict):
     Original version by Gijs Molenaar for LOFAR Transients Pipeline.
     """
     def __init__(self, filename=None):
-        """Create a parameterset object. """
-        self.filename = filename
-        self._parse_file(self.filename)
+        """Create a parameterset object."""
+        if filename:
+            self.adoptFile(filename)
 
     def _parse_file(self, filename):
         self._data = {}
-        for line in open(filename):
+        f = open(filename)
+        for line in f:
             if '#' in line:
                 line = line.split('#')[0]
             if '=' in line:
                 key, value = line.split('=', 1)
                 self[key.strip()] = value.strip()
+        f.close()
 
-    def makeSubset(self, baseKey, prefix=''):
-        """
-        Return a subset as a new parameterset object.
-
-        baseKey
-          The leading part of the parameter name denoting the subset.
-          A trailing period needs to be given.
-        prefix
-          The baseKey parameter name part is replaced by this new prefix.
-          The default new prefix is empty.
-
-        For example::
-
-          newps = ps.makeSubset ('p1.p2.', 'pr.')
-
-        creates a subset of all keys starting with `p1.p2.` and replaces
-        that prefix by `pr.`.
-
-        """
-        raise NotImplementedError
+    def adoptFile(self, filename):
+        """Supplement this parset with the contents of filename."""
+        self._parse_file(filename)
 
     def getVector(self, key):
         """Get the value as a vector of values."""
@@ -46,10 +33,6 @@ class Parset(dict):
     def getRecord(self, key):
         """Get the value as a record."""
         return self[key]
-
-    def dict(self):
-        """Turn the parset into a dict"""
-        return self
 
     def getBoolVector(self, key, default=None, expandable=False):
         """
@@ -135,15 +118,6 @@ class Parset(dict):
             raise NotImplementedError
         return [str(self.get(key, default))]
 
-    def add(self, PyParameterSet, *args, **kwargs):
-        raise NotImplementedError
-
-    def adoptCollection(self):
-        raise NotImplementedError
-
-    def adoptFile(self):
-        raise NotImplementedError
-
     def fullModuleName(self):
         raise NotImplementedError
 
@@ -197,3 +171,9 @@ class Parset(dict):
 
     def __reduce__(self):
         raise NotImplementedError
+
+    def getDateTime(self, key, formatstring="%Y-%m-%d %H:%M:%S"):
+        """
+        Return the value of key as an instance of datetime.datetime.
+        """
+        return datetime.datetime.strptime(self.get(key), formatstring)
