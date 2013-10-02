@@ -9,3 +9,6 @@ class Observation(object):
         p = Parset(self.parset)
         self.start_time = p.getDateTime("ObsSW.Observation.startTime")
         self.end_time = p.getDateTime("ObsSW.Observation.stopTime")
+
+    def __cmp__(self, other):
+        return cmp(self.start_time, other.start_time)
