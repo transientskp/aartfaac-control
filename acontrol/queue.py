@@ -14,7 +14,13 @@ class Queue(object):
         # Adds a new observation to the queue.
         self.lock.acquire()
         try:
-            bisect.insort(self.observations, obs)
+            i = bisect.bisect(self.observations, obs)
+            if ((i > 0 and self.observations[i-1].end_time > obs.start_time) or
+                (i < len(self.observations) and self.observations[i].start_time < obs.end_time)):
+                print "WARNING: Not inserting overlapping observation"
+                return
+            else:
+                self.observations.insert(i, obs)
         finally:
             self.lock.release()
 

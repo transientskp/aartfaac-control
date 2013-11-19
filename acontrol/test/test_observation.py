@@ -19,6 +19,13 @@ class ObservationTestCase(TestWithParset):
             datetime.datetime(2013, 8, 24, 14, 29, 00)
         )
 
+    def test_duration(self):
+        self.assertEqual(
+            self.observation.duration,
+            datetime.datetime(2013, 8, 24, 14, 29, 00) -
+            datetime.datetime(2013, 8, 24, 14, 18, 00)
+        )
+
     def test_sort(self):
         # Observations are sorted by start time.
         self.assertTrue(self.observation == self.observation)

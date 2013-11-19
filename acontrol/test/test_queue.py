@@ -17,14 +17,23 @@ class QueueTestCase(TestWithParset):
         self.queue.add(self.observation)
         self.assertEqual(len(self.queue.observations), 1)
 
+    def test_add_duplicate(self):
+        # We can't add a duplicate observation to the queue
+        self.assertEqual(len(self.queue.observations), 0)
+        self.queue.add(self.observation)
+        self.queue.add(self.observation)
+        self.assertEqual(len(self.queue.observations), 1)
+
     def test_queue_sorted(self):
         # The queue is always in sorted order
         self.queue.add(self.observation)
         new_obs = Observation(self.parset_file.name)
-        new_obs.start_time += datetime.timedelta(10)
+        new_obs.start_time += self.observation.duration
+        new_obs.end_time += self.observation.duration
         self.queue.add(new_obs)
         new_obs = Observation(self.parset_file.name)
-        new_obs.start_time -= datetime.timedelta(10)
+        new_obs.start_time -= self.observation.duration
+        new_obs.end_time -= self.observation.duration
         self.queue.add(new_obs)
         self.assert_(self.queue.observations[0] < self.queue.observations[1])
         self.assert_(self.queue.observations[0] < self.queue.observations[2])
