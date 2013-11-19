@@ -13,16 +13,16 @@ class QueueTestCase(TestWithParset):
 
     def test_add_to_queue(self):
         # The queue grows when we add to it
-        self.assertEqual(len(self.queue.observations), 0)
+        self.assertEqual(len(self.queue), 0)
         self.queue.add(self.observation)
-        self.assertEqual(len(self.queue.observations), 1)
+        self.assertEqual(len(self.queue), 1)
 
     def test_add_duplicate(self):
         # We can't add a duplicate observation to the queue
-        self.assertEqual(len(self.queue.observations), 0)
+        self.assertEqual(len(self.queue), 0)
         self.queue.add(self.observation)
         self.queue.add(self.observation)
-        self.assertEqual(len(self.queue.observations), 1)
+        self.assertEqual(len(self.queue), 1)
 
     def test_queue_sorted(self):
         # The queue is always in sorted order
@@ -35,24 +35,24 @@ class QueueTestCase(TestWithParset):
         new_obs.start_time -= self.observation.duration
         new_obs.end_time -= self.observation.duration
         self.queue.add(new_obs)
-        self.assert_(self.queue.observations[0] < self.queue.observations[1])
-        self.assert_(self.queue.observations[0] < self.queue.observations[2])
-        self.assert_(self.queue.observations[1] < self.queue.observations[2])
+        self.assert_(self.queue._observations[0] < self.queue._observations[1])
+        self.assert_(self.queue._observations[0] < self.queue._observations[2])
+        self.assert_(self.queue._observations[1] < self.queue._observations[2])
 
     def test_upcoming(self):
         # This observation is ready to go and so should be de-queued
         self.observation.start_time = datetime.datetime.now()
         self.queue.add(self.observation)
-        self.assertEqual(len(self.queue.observations), 1)
+        self.assertEqual(len(self.queue), 1)
         self.assert_(self.queue.upcoming(look_ahead=10))
-        self.assertEqual(len(self.queue.observations), 0)
+        self.assertEqual(len(self.queue), 0)
 
         # This observation is not, so the queue remains unchanged
         self.observation.start_time = datetime.datetime.now() + datetime.timedelta(days=1)
         self.queue.add(self.observation)
-        self.assertEqual(len(self.queue.observations), 1)
+        self.assertEqual(len(self.queue), 1)
         self.assert_(not self.queue.upcoming(look_ahead=10))
-        self.assertEqual(len(self.queue.observations), 1)
+        self.assertEqual(len(self.queue), 1)
 
 if __name__ == "__main__":
     unittest.main()
