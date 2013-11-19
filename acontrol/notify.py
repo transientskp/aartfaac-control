@@ -21,5 +21,3 @@ class ControlThread(thread.HaltableThread):
                 print "thread is stopped"
                 notifier.stop()
                 break
-            else:
-                print "thread is not stopped"
