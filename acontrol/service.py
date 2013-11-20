@@ -1,4 +1,8 @@
+import os
 import sys
+import fnmatch
+import datetime
+import glob
 
 from acontrol.queue import Queue
 from acontrol.observation import Observation
@@ -10,25 +14,28 @@ from twisted.python import filepath
 from twisted.python import usage
 from twisted.application.service import Service, MultiService
 
+SECONDS_IN_DAY = 86400
+US_IN_SECOND = 1e6
+
+def call_at_time(target_datetime, f, *args, **kwargs):
+    """
+    Run f(*args, **kwargs) at datetime.
+    """
+    delta = target_datetime - datetime.datetime.now()
+    seconds_ahead = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
+    if seconds_ahead > 0:
+        print "Will call in %d seconds" % (seconds_ahead,)
+        return reactor.callLater(seconds_ahead, f, *args, **kwargs)
+    else:
+        print "Not scheduling; target is in the past"
+    return None
+
+
 class Options(usage.Options):
     optParameters = [
-        ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"]
+        ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
+        ["pattern", "p", "Observation??????", "Glob pattern to select usable parsets"]
     ]
-
-
-class Enqueuer(object):
-    def __init__(self, queue):
-        self._queue = queue
-
-    def __call__(self, ignored, filepath, mask):
-#        print filepath.path
-#        obs = Observation(filepath.path)
-#        print obs.duration
-#        self._queue.add(obs)
-        self._queue.add(Observation(filepath.path))
-#        print "event %s on %s" % (
-#            ', '.join(inotify.humanReadableMask(mask)), filepath)
-#        #self._queue.add(obj)
 
 
 class NotifyService(Service):
@@ -48,45 +55,78 @@ class NotifyService(Service):
 
 
 class WorkerService(Service):
-    POLL_INTERVAL = 1
-    POLL_LOOKAHEAD = 10
+    LEAD_TIME  = 10 # In seconds
+    PRUNE_TIME = 10
 
-    def __init__(self, queue):
-        self.queue = queue
-        self.poll_loop = LoopingCall(self.check_queue)
-        self.busy = False
+    def __init__(self, fnpattern):
+        self.availabile = False
+        self._parsets = {}
+        self._prune_call = LoopingCall(self.prune)
+    self._fnpattern = fnpattern
 
     def startService(self):
-        self.poll_loop.start(self.POLL_INTERVAL)
+    self.available = True
+        self._prune_call.start(self.PRUNE_TIME)
 
     def stopService(self):
-        self.poll_loop.stop()
+        # Shut down any processing in progress...
+    self.available = False
+        self._prune_call.stop()
 
-    def check_queue(self):
-        if self.busy:
-            return
-        upcoming = self.queue.upcoming(self.POLL_LOOKAHEAD)
-        if upcoming:
-            print "Got upcoming observation"
-            self.poll_loop.stop()
-            self.busy = True
+    def processObservation(self, obs):
+        if self.available:
+            print "starting to process ", obs
+        else:
+            print "Skipping job ", obs
+
+    def enqueueObservation(self, ignored, filepath, mask):
+        print filepath.basename()
+        if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
+            obs = Observation(filepath.path)
+            call = call_at_time(
+                obs.start_time - datetime.timedelta(seconds=self.LEAD_TIME),
+                self.processObservation,
+                obs
+            )
+        print "Scheduling"
+        if call and filepath.path in self._parsets and self._parsets[filepath.path].active():
+            print "... REcheduling!"
+            self._parsets[filepath.path].cancel()
+        self._parsets[filepath.path] = call
+        else:
+            print "Ignoring ", filepath.basename()
+
+    def prune(self):
+    print "Pruning"
+    pruneable = []
+    for k, v in self._parsets.iteritems():
+            if not v or not v.active():
+        pruneable.append(k)
+        for k in pruneable:
+            del self._parsets[k]
+        print "Currently tracking %d observations" % (len(self._parsets),)
 
 
 def makeService(config):
     acontrol_service = MultiService()
 
-    queue = Queue()
+    worker_service = WorkerService(config['pattern'])
+    worker_service.setName("Worker")
+    worker_service.setServiceParent(acontrol_service)
+
+    # Slurp up any existing parsets
+    for file in glob.glob(os.path.join(config['dir'], config['pattern'])):
+        reactor.callWhenRunning(
+        worker_service.enqueueObservation,
+            None, filepath.FilePath(file), None
+        )
 
     notifier_service = NotifyService(
         filepath.FilePath(config['dir']),
         mask=inotify.IN_CHANGED,
-        callbacks=[Enqueuer(queue)]
+        callbacks=[worker_service.enqueueObservation]
     )
     notifier_service.setName("Notifier")
     notifier_service.setServiceParent(acontrol_service)
-
-    worker_service = WorkerService(queue)
-    worker_service.setName("Worker")
-    worker_service.setServiceParent(acontrol_service)
 
     return acontrol_service
