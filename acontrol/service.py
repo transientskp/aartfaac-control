@@ -62,15 +62,15 @@ class WorkerService(Service):
         self.availabile = False
         self._parsets = {}
         self._prune_call = LoopingCall(self.prune)
-    self._fnpattern = fnpattern
+        self._fnpattern = fnpattern
 
     def startService(self):
-    self.available = True
+        self.available = True
         self._prune_call.start(self.PRUNE_TIME)
 
     def stopService(self):
         # Shut down any processing in progress...
-    self.available = False
+        self.available = False
         self._prune_call.stop()
 
     def processObservation(self, obs):
@@ -92,19 +92,19 @@ class WorkerService(Service):
         if call and filepath.path in self._parsets and self._parsets[filepath.path].active():
             print "... REcheduling!"
             self._parsets[filepath.path].cancel()
-        self._parsets[filepath.path] = call
+            self._parsets[filepath.path] = call
         else:
             print "Ignoring ", filepath.basename()
 
     def prune(self):
-    print "Pruning"
-    pruneable = []
-    for k, v in self._parsets.iteritems():
-            if not v or not v.active():
-        pruneable.append(k)
-        for k in pruneable:
-            del self._parsets[k]
-        print "Currently tracking %d observations" % (len(self._parsets),)
+        print "Pruning"
+        pruneable = []
+        for k, v in self._parsets.iteritems():
+                if not v or not v.active():
+            pruneable.append(k)
+            for k in pruneable:
+                del self._parsets[k]
+            print "Currently tracking %d observations" % (len(self._parsets),)
 
 
 def makeService(config):
