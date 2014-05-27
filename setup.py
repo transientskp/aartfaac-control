@@ -9,5 +9,7 @@ setup(
     long_description=open('README.rst').read(),
     url="http://github.com/aartfaac/control",
     author="John Swinbank",
-    author_email="swinbank@aartfaac.org"
+    author_email="swinbank@aartfaac.org",
+    maintainer="Folkert Huizinga",
+    maintainer_email="f.huizinga@uva.nl", requires=['twisted', 'paramiko']
 )

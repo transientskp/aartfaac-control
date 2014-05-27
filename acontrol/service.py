@@ -1,5 +1,4 @@
 import os
-import sys
 import fnmatch
 import datetime
 import glob
@@ -75,6 +74,7 @@ class WorkerService(Service):
         self._prune_call.stop()
 
     def processObservation(self, obs):
+        # Entry point, spawn all commands
         if self.available:
             print "starting to process ", obs
         else:
@@ -110,7 +110,6 @@ class WorkerService(Service):
 
 def makeService(config):
     acontrol_service = MultiService()
-
     worker_service = WorkerService(config['pattern'])
     worker_service.setName("Worker")
     worker_service.setServiceParent(acontrol_service)
