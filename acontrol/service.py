@@ -3,7 +3,6 @@ import fnmatch
 import datetime
 import glob
 
-from acontrol.queue import Queue
 from acontrol.observation import Observation
 
 from twisted.internet import reactor
@@ -75,7 +74,7 @@ class WorkerService(Service):
 
     def processObservation(self, obs):
         # Entry point, spawn all commands
-        if self.available:
+        if self.available and obs.is_valid():
             print "starting to process ", obs
         else:
             print "Skipping job ", obs

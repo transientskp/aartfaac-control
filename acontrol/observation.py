@@ -9,13 +9,25 @@ class Observation(object):
         p = Parset(self.parset)
         self.start_time = p.getDateTime("ObsSW.Observation.startTime")
         self.end_time = p.getDateTime("ObsSW.Observation.stopTime")
+        self.antenna_array = p.getString("ObsSW.Observation.antennaArray")
+        self.antenna_set = p.getString("ObsSW.Observation.antennaSet")
+        self.sample_clock = p.getInt("ObsSW.Observation.sampleClock")
+        v = p.getString("ObsSW.Observation.Beam[0].subbandList")
+        l = v[1:-1].split("..")
+        self.start_subband, self.stop_subband = map(int, l)
+        self.start_freq = self.start_subband*self.sample_clock*1e6/1024.0
+        self.chan_width = self.sample_clock*1e6/(64.0*1024.0)
 
     @property
     def duration(self):
         return self.end_time - self.start_time
 
+    # TODO: Check for aartfaac piggyback flag
+    def is_valid(self):
+        return self.antenna_array == "LBA"
+
     def __str__(self):
-        return "%s-%s" % (self.start_time, self.end_time)
+        return "OBS - A:%s F:%f C:%f\n" % (self.antenna_set, self.start_freq, self.chan_width)
 
     def __cmp__(self, other):
         return cmp(self.start_time, other.start_time)
