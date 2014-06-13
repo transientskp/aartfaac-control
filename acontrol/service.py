@@ -75,9 +75,9 @@ class WorkerService(Service):
     def processObservation(self, obs):
         # Entry point, spawn all commands
         if self.available and obs.is_valid():
-            print "starting to process ", obs
+            print "starting to process", obs
         else:
-            print "Skipping job ", obs
+            print "Skipping job", obs
 
     def enqueueObservation(self, ignored, filepath, mask):
         print filepath.basename()
