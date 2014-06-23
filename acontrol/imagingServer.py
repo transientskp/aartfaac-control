@@ -1,7 +1,7 @@
 from acontrol.connection import Connection
 
-GIT_SHA1 = "UNDEFINED"
-CMD = "docker run -d --expose %d -p %d:%d aartfaac/imaging:%d " \
+GIT_SHA1 = "dcd9c05" # obtained $(git log -1 --format="%h")
+CMD = "docker run --expose %d -p %d:%d aartfaac/imaging:%d " \
       "start_server.py --stream 64 %f %f 1-63"
 
 

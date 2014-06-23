@@ -22,6 +22,10 @@ class Observation(object):
     def duration(self):
         return self.end_time - self.start_time
 
+    @property
+    def start(self):
+        return self.start_time.strftime("%d-%m-%y")
+
     # TODO: Check for aartfaac piggyback flag
     def is_valid(self):
         return self.antenna_array == "LBA"

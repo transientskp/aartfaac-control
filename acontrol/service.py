@@ -4,6 +4,7 @@ import datetime
 import glob
 
 from acontrol.observation import Observation
+from acontrol.imagingServer import ImagingServer
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -14,7 +15,6 @@ from twisted.application.service import Service, MultiService
 
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
-WATCH_DIR = os.path.abspath(os.path.dirname(__file__)) + '/../data'
 
 def call_at_time(target_datetime, f, *args, **kwargs):
     """
@@ -32,7 +32,7 @@ def call_at_time(target_datetime, f, *args, **kwargs):
 
 class Options(usage.Options):
     optParameters = [
-        ["dir", "d", WATCH_DIR, "Directory to monitor for parsets"],
+        ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
         ["pattern", "p", "Observation??????", "Glob pattern to select usable parsets"]
     ]
 
@@ -62,6 +62,7 @@ class WorkerService(Service):
         self._parsets = {}
         self._prune_call = LoopingCall(self.prune)
         self._fnpattern = fnpattern
+        self.img_server = ImagingServer('ads001.control.lofar')
 
     def startService(self):
         self.available = True
@@ -76,6 +77,7 @@ class WorkerService(Service):
         # Entry point, spawn all commands
         if self.available and obs.is_valid():
             print "starting to process", obs
+
         else:
             print "Skipping job", obs
 
