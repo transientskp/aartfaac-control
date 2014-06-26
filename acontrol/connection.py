@@ -4,6 +4,8 @@ import paramiko
 class Connection(object):
   def __init__(self, host):
     self.host = host
+    # FIXME !!!
+    return
     self.lock = threading.Lock()
     self.client = paramiko.SSHClient()
     self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -13,6 +15,9 @@ class Connection(object):
     self.channels = {}
 
   def start_program(self, cmd):
+    print "Executing: %s" % (cmd)
+    # FIXME !!!
+    return
     self.channels[cmd] = self.transport.open_session()
     self.channels[cmd].get_pty()
     self.channels[cmd].exec_command(cmd)
