@@ -12,7 +12,7 @@ class Observation(object):
         self.antenna_array = p.getString("ObsSW.Observation.antennaArray")
         self.antenna_set = p.getString("ObsSW.Observation.antennaSet")
         self.sample_clock = p.getInt("ObsSW.Observation.sampleClock")
-        self.start_subband = 590
+        self.start_subband = 590/2
         self.start_freq = self.start_subband*self.sample_clock*1e6/1024.0
         self.chan_width = self.sample_clock*1e6/(64.0*1024.0)
 
