@@ -1,16 +1,19 @@
-import threading
+import os
 import paramiko
 
 class Connection(object):
   def __init__(self, host):
-    self.host = host
-    # FIXME !!!
-    return
-    self.lock = threading.Lock()
+    self.config = paramiko.SSHConfig()
+    self.config.parse(open(os.path.expanduser('~/.ssh/config')))
+    self.host = self.config.lookup(host)
     self.client = paramiko.SSHClient()
     self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     self.client.load_system_host_keys()
-    self.client.connect(host)
+
+    proxy = None
+    if self.host.has_key('proxycommand'):
+      proxy = paramiko.ProxyCommand(self.host['proxycommand'])
+    self.client.connect(self.host['hostname'], sock=proxy)
     self.transport = self.client.get_transport()
     self.channels = {}
 

@@ -63,8 +63,8 @@ class WorkerService(Service):
         self._parsets = {}
         self._prune_call = LoopingCall(self.prune)
         self._fnpattern = fnpattern
-        self.img_server = ImagingServer('localhost')
-        self.img_pipelines = ImagingPipeline('localhost')
+        self.img_server = ImagingServer('ads001')
+        self.img_pipelines = ImagingPipeline('ais001')
 
     def startService(self):
         self.available = True
@@ -80,7 +80,7 @@ class WorkerService(Service):
         if self.available and obs.is_valid():
             print "starting to process", obs
             self.img_server.start_server(obs)
-            self.img_pipelines.start_pipelines(64, self.img_server.host, self.img_server.port_out, obs)
+            self.img_pipelines.start_pipelines(5, self.img_server.host, self.img_server.port_out, obs)
         else:
             print "Skipping job", obs
 

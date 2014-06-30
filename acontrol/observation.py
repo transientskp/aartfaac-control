@@ -29,7 +29,7 @@ class Observation(object):
         return self.antenna_array == "LBA"
 
     def __str__(self):
-        return "OBS - A:%s F:%f W:%f\n" % (self.antenna_set, self.start_freq, self.chan_width)
+        return "OBS - A:%s F:%f W:%f" % (self.antenna_set, self.start_freq, self.chan_width)
 
     def __cmp__(self, other):
         return cmp(self.start_time, other.start_time)
