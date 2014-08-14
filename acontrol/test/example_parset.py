@@ -8,6 +8,9 @@ EXAMPLE_PARSET = """
     ObsSW.Observation.bandFilter=HBA_110_190
     ObsSW.Observation.startTime=2013-08-24 14:18:00
     ObsSW.Observation.stopTime=2013-08-24 14:29:00
+    ObsSW.Observation.sampleClock=200
+    ObsSW.Observation.antennaArray=LBA
+    ObsSW.Observation.antennaSet=LBA_OUTER
 """
 
 EXAMPLE_PARSET = textwrap.dedent(EXAMPLE_PARSET).strip()

@@ -21,7 +21,7 @@ class ParsetTestCase(TestWithParset):
 
     def test_read_file(self):
         ps = Parset(self.parset_file.name)
-        self.assertEqual(len(ps), 5)
+        self.assertEqual(len(ps), 6)
 
 if __name__ == "__main__":
 	unittest.main()

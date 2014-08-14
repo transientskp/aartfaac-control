@@ -19,8 +19,6 @@ class Connection(object):
 
   def start_program(self, cmd):
     print "Executing: %s" % (cmd)
-    # FIXME !!!
-    return
     self.channels[cmd] = self.transport.open_session()
     self.channels[cmd].get_pty()
     self.channels[cmd].exec_command(cmd)
