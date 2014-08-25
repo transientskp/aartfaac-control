@@ -1,5 +1,6 @@
 import os
 import paramiko
+import sys
 
 class Connection(object):
   def __init__(self, host):
@@ -10,10 +11,10 @@ class Connection(object):
     self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     self.client.load_system_host_keys()
 
-    proxy = None
-    if self.host.has_key('proxycommand'):
-      proxy = paramiko.ProxyCommand(self.host['proxycommand'])
-    self.client.connect(self.host['hostname'], sock=proxy)
+    if not self.host:
+      self.host = {'hostname': host}
+      
+    self.client.connect(**self.host)
     self.transport = self.client.get_transport()
     self.channels = {}
 

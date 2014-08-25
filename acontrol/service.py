@@ -37,6 +37,10 @@ class Options(usage.Options):
         ["pattern", "p", "Observation??????", "Glob pattern to select usable parsets"]
     ]
 
+    optFlags = [
+        ["dryrun", "r", "Show commands, don't run them, don't connect to other systems"]
+    ]
+
 
 class NotifyService(Service):
     """
