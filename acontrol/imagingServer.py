@@ -7,8 +7,8 @@ CMD = "docker run -p %d:%d -p %d:%d aartfaac:%s " \
 
 class ImagingServer(Connection):
 
-    def __init__(self, host):
-        super(ImagingServer, self).__init__(host)
+    def __init__(self, host, dryrun):
+        super(ImagingServer, self).__init__(host, dryrun)
         self.port_in = 4100
         self.port_out = 2000
         self.server_cmd = None

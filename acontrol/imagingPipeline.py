@@ -7,8 +7,8 @@ CMD = "docker --expose %d:%d run -v /data:/data:rw aartfaac:%s start_pipeline.py
 
 class ImagingPipeline(Connection):
 
-    def __init__(self, host):
-        super(ImagingPipeline, self).__init__(host)
+    def __init__(self, host, dryrun):
+        super(ImagingPipeline, self).__init__(host, dryrun)
         self.mon_port = 4200
         self.commands = []
 

@@ -16,6 +16,9 @@ from twisted.application.service import Service, MultiService
 
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
+SSH_AIS = 'ais001'
+SSH_ADS = 'ads001'
+SSH_GPU = 'gpu02'
 
 def call_at_time(target_datetime, f, *args, **kwargs):
     """
@@ -62,13 +65,14 @@ class WorkerService(Service):
     LEAD_TIME  = 10 # In seconds
     PRUNE_TIME = 10
 
-    def __init__(self, fnpattern):
+    def __init__(self, config):
         self.availabile = False
         self._parsets = {}
         self._prune_call = LoopingCall(self.prune)
-        self._fnpattern = fnpattern
-        self.img_server = ImagingServer('ads001')
-        self.img_pipelines = ImagingPipeline('ais001')
+        self._fnpattern = config['pattern']
+        self._dryrun = config['dryrun']
+        self.img_server = ImagingServer(SSH_ADS, config['dryrun'])
+        self.img_pipelines = ImagingPipeline(SSH_AIS, config['dryrun'])
 
     def startService(self):
         self.available = True
@@ -118,7 +122,7 @@ class WorkerService(Service):
 
 def makeService(config):
     acontrol_service = MultiService()
-    worker_service = WorkerService(config['pattern'])
+    worker_service = WorkerService(config)
     worker_service.setName("Worker")
     worker_service.setServiceParent(acontrol_service)
 
