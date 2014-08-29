@@ -88,7 +88,7 @@ class WorkerService(Service):
         if self.available and obs.is_valid():
             print "starting to process", obs
             self.img_server.start_server(obs)
-            self.img_pipelines.start_pipelines(5, self.img_server.host, self.img_server.port_out, obs)
+            self.img_pipelines.start_pipelines(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
         else:
             print "Skipping job", obs
 

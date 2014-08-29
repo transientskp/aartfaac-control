@@ -4,6 +4,7 @@ import paramiko
 class Connection(object):
   def __init__(self, host, dryrun=False):
     self.dryrun = dryrun
+    self.host = {'hostname': host}
 
     if not dryrun:
       self.config = paramiko.SSHConfig()
@@ -22,7 +23,7 @@ class Connection(object):
 
   def start_program(self, cmd):
     print "Executing: %s on %s" % (cmd, self.host['hostname'])
-    if not dryrun:
+    if not self.dryrun:
       self.channels[cmd] = self.transport.open_session()
       self.channels[cmd].get_pty()
       self.channels[cmd].exec_command(cmd)
