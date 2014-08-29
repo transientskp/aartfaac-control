@@ -161,8 +161,13 @@ class Parset(dict):
     def version(self):
         raise NotImplementedError
 
-    def writeFile(self):
-        raise NotImplementedError
+    def writeFile(self, filename):
+        file = open(filename, 'w')
+        items = self.items()
+        items.sort()
+        for k,v in items:
+          file.write("%s=%s\n" % (k, v))
+        file.close()
 
     def isRecord(self):
         raise NotImplementedError

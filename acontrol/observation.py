@@ -16,6 +16,9 @@ class Observation(object):
         self.start_freq = self.start_subband*self.sample_clock*1e6/1024.0
         self.chan_width = self.sample_clock*1e6/(64.0*1024.0)
 
+    def save(self, filename):
+      self.parset.writeFile(filename)
+
     @property
     def duration(self):
         return self.end_time - self.start_time
