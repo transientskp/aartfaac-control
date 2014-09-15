@@ -37,7 +37,7 @@ def call_at_time(target_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "Observation??????", "Glob pattern to select usable parsets"]
+        ["pattern", "p", "*:*", "Glob pattern to select usable parsets"]
     ]
 
     optFlags = [
@@ -86,7 +86,7 @@ class WorkerService(Service):
     def processObservation(self, obs):
         # Entry point, spawn all commands
         if self.available and obs.is_valid():
-            print "starting to process", obs
+            print "Starting to process", obs
             self.img_server.start_server(obs)
             self.img_pipelines.start_pipelines(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
         else:
