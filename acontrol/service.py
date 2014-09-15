@@ -94,6 +94,7 @@ class WorkerService(Service):
 
     def enqueueObservation(self, ignored, filepath, mask):
         print filepath.basename()
+        call = None
         if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
             obs = Observation(filepath.path)
             call = call_at_time(
