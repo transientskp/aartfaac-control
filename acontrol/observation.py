@@ -7,11 +7,11 @@ class Observation(object):
     def __init__(self, parset):
         self.parset = parset
         p = Parset(self.parset)
-        self.start_time = p.getDateTime("ObsSW.Observation.startTime")
-        self.end_time = p.getDateTime("ObsSW.Observation.stopTime")
-        self.antenna_array = p.getString("ObsSW.Observation.antennaArray")
-        self.antenna_set = p.getString("ObsSW.Observation.antennaSet")
-        self.sample_clock = p.getInt("ObsSW.Observation.sampleClock")
+        self.start_time = p.getDateTime("Observation.startTime")
+        self.end_time = p.getDateTime("Observation.stopTime")
+        self.antenna_array = p.getString("Observation.antennaArray")
+        self.antenna_set = p.getString("Observation.antennaSet")
+        self.sample_clock = p.getInt("Observation.sampleClock")
         self.valid = p.getString("Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed") == "true"
         self.start_subband = 590/2
         self.start_freq = self.start_subband*self.sample_clock*1e6/1024.0
