@@ -37,7 +37,7 @@ def call_at_time(target_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "*:*", "Glob pattern to select usable parsets"]
+        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"]
     ]
 
     optFlags = [
@@ -93,32 +93,34 @@ class WorkerService(Service):
             print "Skipping job", obs
 
     def enqueueObservation(self, ignored, filepath, mask):
-        print filepath.basename()
         call = None
         if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
+            print "Parsing %s (%dB)" % (filepath.path, filepath.getsize())
             obs = Observation(filepath.path)
             call = call_at_time(
                 obs.start_time - datetime.timedelta(seconds=self.LEAD_TIME),
                 self.processObservation,
                 obs
             )
-        print "Scheduling"
+
         if call and filepath.path in self._parsets and self._parsets[filepath.path].active():
-            print "... REcheduling!"
+            print "Rescheduling ", filepath.path
             self._parsets[filepath.path].cancel()
             self._parsets[filepath.path] = call
+        elif call and filepath.path not in self._parsets:
+            print "Scheduling ", filepath.path
+            self._parsets[filepath.path] = call
         else:
-            print "Ignoring ", filepath.basename()
+            print "Ignoring ", filepath.path
 
     def prune(self):
-        print "Pruning"
         pruneable = []
         for k, v in self._parsets.iteritems():
             if not v or not v.active():
                 pruneable.append(k)
-            for k in pruneable:
-                del self._parsets[k]
-            print "Currently tracking %d observations" % (len(self._parsets),)
+        for k in pruneable:
+            del self._parsets[k]
+        print "Currently tracking %d observations, pruned %d" % (len(self._parsets), len(pruneable))
 
 
 def makeService(config):
@@ -134,9 +136,11 @@ def makeService(config):
             None, filepath.FilePath(file), None
         )
 
+    # We notify on a file that has been closed in writemode as files are copied
+    # over scp, it can take some time for the full file to arrive
     notifier_service = NotifyService(
         filepath.FilePath(config['dir']),
-        mask=inotify.IN_CHANGED,
+        mask=inotify.IN_CLOSE_WRITE,
         callbacks=[worker_service.enqueueObservation]
     )
     notifier_service.setName("Notifier")

@@ -9,6 +9,7 @@ class Parset(dict):
     """
     def __init__(self, filename=None):
         """Create a parameterset object."""
+        self.filename = filename
         if filename:
             self.adoptFile(filename)
 
