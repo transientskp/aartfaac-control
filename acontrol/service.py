@@ -62,8 +62,9 @@ class NotifyService(Service):
 
 
 class WorkerService(Service):
-    LEAD_TIME  = 10 # In seconds
-    PRUNE_TIME = 10
+    PRE_TIME   = 10  # Start pipeline N seconds before observation starts
+    PRUNE_TIME = 10  # Prune observations that are finished every N seconds
+
 
     def __init__(self, config):
         self.availabile = False
@@ -84,21 +85,28 @@ class WorkerService(Service):
         self._prune_call.stop()
 
     def processObservation(self, obs):
-        # Entry point, spawn all commands
+        """
+        Start a pipeline to process the observation
+        """
         if self.available and obs.is_valid():
-            print "Starting to process", obs
+            # First we stop previous observation, if running...
+            self.img_server.stop_server()
+            self.img_pipelines.stop_pipelines()
+            print "Starting", obs
             self.img_server.start_server(obs)
             self.img_pipelines.start_pipelines(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
         else:
-            print "Skipping job", obs
+            print "Skipping", obs
 
     def enqueueObservation(self, ignored, filepath, mask):
+        """
+        Parse files matching the glob pattern and create future call
+        """
         call = None
         if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
-            print "Parsing %s (%dB)" % (filepath.path, filepath.getsize())
             obs = Observation(filepath.path)
             call = call_at_time(
-                obs.start_time - datetime.timedelta(seconds=self.LEAD_TIME),
+                obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
                 self.processObservation,
                 obs
             )
@@ -114,13 +122,16 @@ class WorkerService(Service):
             print "Ignoring ", filepath.path
 
     def prune(self):
+        """
+        Prune parsets/observations that have passed or are inactive
+        """
         pruneable = []
         for k, v in self._parsets.iteritems():
             if not v or not v.active():
                 pruneable.append(k)
         for k in pruneable:
             del self._parsets[k]
-        print "Currently tracking %d observations, pruned %d" % (len(self._parsets), len(pruneable))
+        print "Tracking %d observations, pruned %d" % (len(self._parsets), len(pruneable))
 
 
 def makeService(config):
