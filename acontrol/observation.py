@@ -27,14 +27,18 @@ class Observation(object):
 
     @property
     def start(self):
-        return self.start_time.strftime("%Y%m%d-%H%M%S")
+        return self.start_time.strftime("%H:%M")
+
+    @property
+    def end(self):
+        return self.end_time.strftime("%H:%M")
 
     # TODO: Check for aartfaac piggyback flag
     def is_valid(self):
         return self.valid and self.antenna_array == "LBA"
 
     def __str__(self):
-        return "OBS - %s %0.1fMHz [%s]" % (self.antenna_set, self.start_freq*1e-6, self.filepath)
+        return "[OBS - %s %0.1fMHz %s-%s] %s" % (self.antenna_set, self.start_freq*1e-6, self.start, self.end, self.filepath)
 
     def __cmp__(self, other):
         return cmp(self.start_time, other.start_time)

@@ -1,11 +1,12 @@
 import os
 import fnmatch
-import datetime
+import time, datetime
 import glob
 
 from acontrol.observation import Observation
-from acontrol.imagingServer import ImagingServer
-from acontrol.imagingPipeline import ImagingPipeline
+from acontrol.server import ImagingServer
+from acontrol.pipeline import ImagingPipeline
+from acontrol.correlator import Correlator
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -18,7 +19,7 @@ SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 SSH_AIS = 'ais001'
 SSH_ADS = 'ads001'
-SSH_GPU = 'gpu02'
+SSH_COR = 'gpu02'
 
 def call_at_time(target_datetime, f, *args, **kwargs):
     """
@@ -62,9 +63,8 @@ class NotifyService(Service):
 
 
 class WorkerService(Service):
-    PRE_TIME   = 10  # Start pipeline N seconds before observation starts
+    PRE_TIME   = 20  # Start pipeline N seconds before observation starts
     PRUNE_TIME = 10  # Prune observations that are finished every N seconds
-
 
     def __init__(self, config):
         self.availabile = False
@@ -74,6 +74,7 @@ class WorkerService(Service):
         self._dryrun = config['dryrun']
         self.img_server = ImagingServer(SSH_ADS, config['dryrun'])
         self.img_pipelines = ImagingPipeline(SSH_AIS, config['dryrun'])
+        self.correlator = Correlator(SSH_COR, config['dryrun'])
 
     def startService(self):
         self.available = True
@@ -90,11 +91,16 @@ class WorkerService(Service):
         """
         if self.available and obs.is_valid():
             # First we stop previous observation, if running...
-            self.img_server.stop_server()
-            self.img_pipelines.stop_pipelines()
             print "Starting", obs
-            self.img_server.start_server(obs)
-            self.img_pipelines.start_pipelines(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
+            self.img_server.stop()
+            self.img_pipelines.stop()
+            self.correlator.stop()
+            time.sleep(5.0)
+            self.img_server.start(obs)
+            time.sleep(5.0)
+            self.img_pipelines.start(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
+            time.sleep(5.0)
+            self.correlator.start(obs)
         else:
             print "Skipping", obs
 

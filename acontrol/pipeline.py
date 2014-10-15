@@ -12,12 +12,12 @@ class ImagingPipeline(Connection):
         self.mon_port = 4200
         self.commands = []
 
-    def start_pipelines(self, num, server_addr, server_port, obs):
+    def start(self, num, server_addr, server_port, obs):
         for i in range(0, num):
             cmd = CMD % (self.mon_port+i, GIT_SHA1, obs.start, server_addr, server_port, self.mon_port+i, obs.antenna_set.lower())
             self.commands.append(cmd)
             self.start_program(cmd)
 
-    def stop_pipelines(self):
+    def stop(self):
         for cmd in self.commands:
             self.stop_program(cmd)
