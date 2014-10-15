@@ -16,7 +16,7 @@ class Connection(object):
         self.client.load_system_host_keys()
 
         if not dryrun:
-            self.client.connect(self.host['hostname'], user=self.host['user'])
+            self.client.connect(self.host['hostname'], 22, self.host['user'])
             self.transport = self.client.get_transport()
             self.transport.set_keepalive(self.host['serveraliveinterval'])
             self.channels = {}
