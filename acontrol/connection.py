@@ -7,6 +7,7 @@ class Connection(object):
         self.config = paramiko.SSHConfig()
         self.config.parse(open(os.path.expanduser('~/.ssh/config')))
         self.host = self.config.lookup(host)
+        self.transport = None
 
         if not self.host:
             raise IOError("Hostname `%s' not defined in %s" % (host, os.path.expanduser('~/.ssh/config')))
@@ -14,19 +15,28 @@ class Connection(object):
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.load_system_host_keys()
+        self.channels = {}
 
-        if not dryrun:
+
+    def connect(self):
+        for k in self.channels.keys():
+            del self.channels[k]
+
+        if not self.dryrun:
             self.client.connect(self.host['hostname'], 22, self.host['user'])
             self.transport = self.client.get_transport()
-            self.transport.set_keepalive(self.host['serveraliveinterval'])
-            self.channels = {}
+
 
     def start_program(self, cmd):
+        if not self.transport or not self.transport.is_active():
+            self.connect()
+
         print "Executing: %s on %s" % (cmd, self.host['hostname'])
         if not self.dryrun and not self.channels.has_key(cmd):
             self.channels[cmd] = self.transport.open_session()
             self.channels[cmd].get_pty()
             self.channels[cmd].exec_command(cmd)
+
 
     def stop_program(self, cmd):
         print "Stopping: %s on %s" % (cmd, self.host['hostname'])
