@@ -7,6 +7,7 @@ from acontrol.observation import Observation
 from acontrol.server import ImagingServer
 from acontrol.pipeline import ImagingPipeline
 from acontrol.correlator import Correlator
+from acontrol.mailnotify import GMailNotify
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -38,7 +39,8 @@ def call_at_time(target_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"]
+        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"],
+        ["credentials", "c", None, "User name and password 'user:password' for gmail notification"]
     ]
 
     optFlags = [
@@ -75,6 +77,8 @@ class WorkerService(Service):
         self.img_server = ImagingServer(SSH_ADS, config['dryrun'])
         self.img_pipelines = ImagingPipeline(SSH_AIS, config['dryrun'])
         self.correlator = Correlator(SSH_COR, config['dryrun'])
+        credentials = config['credentials'].split(':')
+        self.gmail = GMailNotify(credentials[0], credentials[1])
 
     def startService(self):
         self.available = True
@@ -95,6 +99,7 @@ class WorkerService(Service):
             self.img_server.stop()
             self.img_pipelines.stop()
             self.correlator.stop()
+            self.gmail.send("Aartfaac MCU001", "Processing %s" % (obs))
             time.sleep(5.0)
             self.img_server.start(obs)
             time.sleep(5.0)
