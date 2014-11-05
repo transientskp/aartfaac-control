@@ -1,28 +1,24 @@
 import smtplib
-from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 
-FROM = "folkerthuizinga@gmail.com"
-TO = "f.huizinga@uva.nl"
+FROM = "acontrol@mcu001.control.lofar"
+TO = "folkerthuizinga@gmail.com"
 
-class GMailNotify:
-
-    def __init__(self, user, pw):
-        self.user = user
-        self.password = pw
-
-    def login(self):
-        self.server = smtplib.SMTP('smtp.gmail.com', 587)
-        self.server.ehlo()
-        self.server.starttls()
-        self.server.ehlo()
-        self.server.login(self.user, self.password)
+class MailNotify:
+    def __init__(self, mfrom=FROM, mto=TO):
+        self.mail_from = mfrom
+        self.mail_to = mto
 
     def send(self, subject, msg):
-        self.login()
-        m = MIMEMultipart()
-        m['From'] = FROM
-        m['To'] = TO
-        m['Subject'] = subject
-        m.attach(MIMEText(msg, 'plain'))
-        self.server.sendmail(FROM, TO, m.as_string())
+        mail = MIMEText(msg)
+        mail['Subject'] = subject
+        mail['From'] = self.mail_from
+        mail['To'] = self.mail_to
+        s = smtplib.SMTP()
+        s.connect()
+        s.sendmail(self.mail_from, [self.mail_to], mail.as_string())
+        s.close()
+
+    def error(self, msg):
+        if msg['isError']:
+          self.send("MCU001 AARTFAAC Error", msg['printed'])

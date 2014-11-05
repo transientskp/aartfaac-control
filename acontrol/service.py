@@ -7,13 +7,14 @@ from acontrol.observation import Observation
 from acontrol.server import ImagingServer
 from acontrol.pipeline import ImagingPipeline
 from acontrol.correlator import Correlator
-from acontrol.mailnotify import GMailNotify
+from acontrol.mailnotify import MailNotify
 
 from twisted.internet import reactor
 from twisted.internet import inotify
 from twisted.internet.task import LoopingCall
 from twisted.python import filepath
 from twisted.python import usage
+from twisted.python import log
 from twisted.application.service import Service, MultiService
 
 SECONDS_IN_DAY = 86400
@@ -68,7 +69,7 @@ class WorkerService(Service):
     PRE_TIME   = 20  # Start pipeline N seconds before observation starts
     PRUNE_TIME = 10  # Prune observations that are finished every N seconds
 
-    def __init__(self, config):
+    def __init__(self, config, email):
         self.availabile = False
         self._parsets = {}
         self._prune_call = LoopingCall(self.prune)
@@ -77,8 +78,7 @@ class WorkerService(Service):
         self.img_server = ImagingServer(SSH_ADS, config['dryrun'])
         self.img_pipelines = ImagingPipeline(SSH_AIS, config['dryrun'])
         self.correlator = Correlator(SSH_COR, config['dryrun'])
-        credentials = config['credentials'].split(':')
-        self.gmail = GMailNotify(credentials[0], credentials[1])
+        self.email = email
 
     def startService(self):
         self.available = True
@@ -99,7 +99,7 @@ class WorkerService(Service):
             self.img_server.stop()
             self.img_pipelines.stop()
             self.correlator.stop()
-            self.gmail.send("Aartfaac MCU001", "Processing %s" % (obs))
+            self.email.send("MCU001 AARTFAAC Obs", "Processing %s" % (obs))
             time.sleep(5.0)
             self.img_server.start(obs)
             time.sleep(5.0)
@@ -147,7 +147,10 @@ class WorkerService(Service):
 
 def makeService(config):
     acontrol_service = MultiService()
-    worker_service = WorkerService(config)
+    credentials = config['credentials'].split(':')
+    email = MailNotify()
+    log.addObserver(email.error)
+    worker_service = WorkerService(config, email)
     worker_service.setName("Worker")
     worker_service.setServiceParent(acontrol_service)
 
