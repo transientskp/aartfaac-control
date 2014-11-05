@@ -40,8 +40,7 @@ def call_at_time(target_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"],
-        ["credentials", "c", None, "User name and password 'user:password' for gmail notification"]
+        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"]
     ]
 
     optFlags = [
@@ -147,7 +146,6 @@ class WorkerService(Service):
 
 def makeService(config):
     acontrol_service = MultiService()
-    credentials = config['credentials'].split(':')
     email = MailNotify()
     log.addObserver(email.error)
     worker_service = WorkerService(config, email)
