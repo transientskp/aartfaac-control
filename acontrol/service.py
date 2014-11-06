@@ -95,16 +95,21 @@ class WorkerService(Service):
         if self.available and obs.is_valid():
             # First we stop previous observation, if running...
             print "Starting", obs
+            msg = ""
             self.img_server.stop()
             self.img_pipelines.stop()
             self.correlator.stop()
-            self.email.send("MCU001 AARTFAAC Obs", "Processing %s" % (obs))
             time.sleep(5.0)
             self.img_server.start(obs)
+            msg += self.img_server.cmd + "\n\n"
             time.sleep(5.0)
             self.img_pipelines.start(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
+            for cmd in self.img_pipelines.commands:
+              msg += cmd + "\n"
             time.sleep(5.0)
             self.correlator.start(obs)
+            msg += "\n" + self.correlator.cmd
+            self.email.send("Processing %s" % (obs), msg)
         else:
             print "Skipping", obs
 

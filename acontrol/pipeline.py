@@ -21,3 +21,4 @@ class ImagingPipeline(Connection):
     def stop(self):
         for cmd in self.commands:
             self.stop_program(cmd)
+        del self.commands[:]

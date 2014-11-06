@@ -10,6 +10,9 @@ class MailNotify:
         self.mail_to = mto
 
     def send(self, subject, msg):
+        """
+        Sends a standard email with a subject and msg
+        """
         mail = MIMEText(msg)
         mail['Subject'] = subject
         mail['From'] = self.mail_from
@@ -20,5 +23,12 @@ class MailNotify:
         s.close()
 
     def error(self, msg):
+        """
+        We hook this method to the twisted log such that we get the error dict
+        See http://twistedmatrix.com/documents/11.1.0/core/howto/logging.html#auto4
+        """
         if msg['isError']:
-          self.send("MCU001 AARTFAAC Error", msg['printed'])
+          if msg.has_key('failure'):
+            self.send("Processing Error", msg['failure'].getErrorMessage())
+          else:
+            self.send("Processing Error", str(msg))

@@ -31,7 +31,7 @@ class Connection(object):
         if not self.transport or not self.transport.is_active():
             self.connect()
 
-        print "Executing: %s on %s" % (cmd, self.host['hostname'])
+        print "Executing: %s on %s@%s" % (cmd, self.host['user'], self.host['hostname'])
         if not self.dryrun and not self.channels.has_key(cmd):
             self.channels[cmd] = self.transport.open_session()
             self.channels[cmd].get_pty()
