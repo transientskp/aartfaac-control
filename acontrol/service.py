@@ -105,7 +105,7 @@ class WorkerService(Service):
             time.sleep(5.0)
             self.img_pipelines.start(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
             for cmd in self.img_pipelines.commands:
-              msg += cmd + "\n"
+                msg += cmd + "\n"
             time.sleep(5.0)
             self.correlator.start(obs)
             msg += "\n" + self.correlator.cmd

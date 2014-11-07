@@ -1,6 +1,7 @@
 from acontrol.connection import Connection
 
-CMD = "startgpu.sh"
+CMD = "startgpu.sh %i"
+COOLDOWN = 5
 
 class Correlator(Connection):
 
@@ -9,7 +10,7 @@ class Correlator(Connection):
         self.cmd = None
 
     def start(self, obs):
-        self.cmd = CMD
+        self.cmd = CMD % (obs.duration + COOLDOWN)
         self.start_program(self.cmd)
 
     def stop(self): 

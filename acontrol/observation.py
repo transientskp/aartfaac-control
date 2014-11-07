@@ -23,7 +23,7 @@ class Observation(object):
 
     @property
     def duration(self):
-        return self.end_time - self.start_time
+        return (self.end_time - self.start_time).seconds
 
     @property
     def start(self):

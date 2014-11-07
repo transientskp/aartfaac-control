@@ -10,9 +10,10 @@ MULTI3 = "tail -f /tmp/test-%i"
 
 class ConnectionTestCase(unittest.TestCase):
   def setUp(self):
-    self.conn = Connection('localhost')
+    self.conn = Connection('ads001')
 
   def tearDown(self):
+    time.sleep(5)
     for v in self.conn.channels.items():
       self.conn.stop_program(v)
 
