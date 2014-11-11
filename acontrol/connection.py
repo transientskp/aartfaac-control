@@ -19,6 +19,7 @@ class Connection(object):
 
 
     def connect(self):
+        print "Connecting: %s@%s" % (self.host['user'], self.host['hostname'])
         for k in self.channels.keys():
             del self.channels[k]
 
@@ -31,7 +32,7 @@ class Connection(object):
         if not self.transport or not self.transport.is_active():
             self.connect()
 
-        print "Executing: %s on %s@%s" % (cmd, self.host['user'], self.host['hostname'])
+        print "Executing: %s" % (cmd)
         if not self.dryrun and not self.channels.has_key(cmd):
             self.channels[cmd] = self.transport.open_session()
             self.channels[cmd].get_pty()
