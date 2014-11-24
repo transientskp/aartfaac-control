@@ -1,9 +1,7 @@
 from acontrol.connection import Connection
 
-GIT_SHA1 = "9f63600" # $(git log -1 --format="%h")
-CMD = "docker run -p %d:%d -p %d:%d aartfaac:%s " \
-      "start_server.py --stream 63 %f %f 32-32"
-
+GIT_SHA1 = "3d1d52a" # $(git log -1 --format="%h")
+CMD = "docker run -p %d:%d -p %d:%d aartfaac:%s start_server.py --stream 63 %f %f 0-62"
 
 class ImagingServer(Connection):
 

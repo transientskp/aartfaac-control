@@ -29,6 +29,6 @@ class MailNotify:
         """
         if msg['isError']:
           if msg.has_key('failure'):
-            self.send("Processing Error", msg['failure'].getErrorMessage())
+            self.send("Processing Error", str(msg))
           else:
             self.send("Processing Error", str(msg))

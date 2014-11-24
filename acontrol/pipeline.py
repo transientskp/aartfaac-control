@@ -1,9 +1,7 @@
 from acontrol.connection import Connection
 
-GIT_SHA1 = "9f63600" # $(git log -1 --format="%h")
-CMD = "docker run --expose %d -v /data:/data:rw aartfaac:%s start_pipeline.py /data/%s " \
-      "--server-host=%s --server-port=%d --casa --monitor-port=%d " \
-      "--antenna-positions=/usr/local/share/aartfaac/antennasets/%s.dat"
+GIT_SHA1 = "3d1d52a" # $(git log -1 --format="%h")
+CMD = "docker run --expose %d -v /data:/data:rw aartfaac:%s start_pipeline.py /data/$(date +%y%m%d-%H%M) --nthreads=63 --server-host=%s --server-port=%d --casa --monitor-port=%d --antenna-positions=/usr/local/share/aartfaac/antennasets/%s.dat"
 
 class ImagingPipeline(Connection):
 

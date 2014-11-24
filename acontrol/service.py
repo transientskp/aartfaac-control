@@ -17,21 +17,27 @@ from twisted.python import usage
 from twisted.python import log
 from twisted.application.service import Service, MultiService
 
+FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 SSH_AIS = 'ais001'
 SSH_ADS = 'ads001'
 SSH_COR = 'gpu02'
 
-def call_at_time(target_datetime, f, *args, **kwargs):
+def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
     """
     Run f(*args, **kwargs) at datetime.
     """
-    delta = target_datetime - datetime.datetime.now()
+    delta = start_datetime - datetime.datetime.now()
     seconds_ahead = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
+    delta = end_datetime - datetime.datetime.now()
+    seconds_before_end = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
     if seconds_ahead > 0:
         print "Will call in %d seconds" % (seconds_ahead,)
         return reactor.callLater(seconds_ahead, f, *args, **kwargs)
+    elif seconds_before_end > FIVE_MINUTES:
+        print "Obs in progress, starting now!"
+        return reactor.callWhenRunning(f, *args, **kwargs)
     else:
         print "Not scheduling; target is in the past"
     return None
@@ -103,7 +109,7 @@ class WorkerService(Service):
             self.img_server.start(obs)
             msg += self.img_server.cmd + "\n\n"
             time.sleep(5.0)
-            self.img_pipelines.start(5, self.img_server.host['hostname'], self.img_server.port_out, obs)
+            self.img_pipelines.start(1, self.img_server.host['hostname'], self.img_server.port_out, obs)
             for cmd in self.img_pipelines.commands:
                 msg += cmd + "\n"
             time.sleep(5.0)
@@ -122,6 +128,7 @@ class WorkerService(Service):
             obs = Observation(filepath.path)
             call = call_at_time(
                 obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
+                obs.end_time,
                 self.processObservation,
                 obs
             )
