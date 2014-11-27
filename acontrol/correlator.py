@@ -1,6 +1,6 @@
 from acontrol.connection import Connection
 
-CMD = "startgpu.sh %i"
+CMD = "/home/fhuizing/startgpu.sh %i"
 COOLDOWN = 5
 
 class Correlator(Connection):
