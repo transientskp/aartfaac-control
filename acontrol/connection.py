@@ -5,7 +5,7 @@ class Connection(object):
     def __init__(self, host, dryrun=False):
         self.dryrun = dryrun
         self.config = paramiko.SSHConfig()
-        self.config.parse(open('~/.ssh/config'))
+        self.config.parse(open(os.path.expanduser('~/.ssh/config')))
         self.host = self.config.lookup(host)
         self.transport = None
 
