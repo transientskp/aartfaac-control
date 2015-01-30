@@ -4,13 +4,11 @@ import time, datetime
 import glob
 
 from acontrol.observation import Observation
-from acontrol.server import ImagingServer
-from acontrol.pipeline import ImagingPipeline
-from acontrol.correlator import Correlator
 from acontrol.mailnotify import MailNotify
 
 from twisted.internet import reactor
 from twisted.internet import inotify
+from twisted.internet import protocol
 from twisted.internet.task import LoopingCall
 from twisted.python import filepath
 from twisted.python import usage
@@ -20,9 +18,7 @@ from twisted.application.service import Service, MultiService
 FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
-SSH_AIS = 'ais001'
-SSH_ADS = 'ads001'
-SSH_COR = 'gpu02'
+
 
 def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
     """
@@ -80,9 +76,6 @@ class WorkerService(Service):
         self._prune_call = LoopingCall(self.prune)
         self._fnpattern = config['pattern']
         self._dryrun = config['dryrun']
-        self.img_server = ImagingServer(SSH_ADS, config['dryrun'])
-        self.img_pipelines = ImagingPipeline(SSH_AIS, config['dryrun'])
-        self.correlator = Correlator(SSH_COR, config['dryrun'])
         self.email = email
 
     def startService(self):
@@ -99,22 +92,11 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self.available and obs.is_valid():
-            # First we stop previous observation, if running...
-            print "Starting", obs
             msg = ""
-            self.img_server.stop()
-            self.img_pipelines.stop()
-            self.correlator.stop()
-            time.sleep(5.0)
-            self.img_server.start(obs)
-            msg += self.img_server.cmd + "\n\n"
-            time.sleep(5.0)
-            self.img_pipelines.start(1, self.img_server.host['hostname'], self.img_server.port_out, obs)
-            for cmd in self.img_pipelines.commands:
-                msg += cmd + "\n"
-            time.sleep(5.0)
-            self.correlator.start(obs)
-            msg += "\n" + self.correlator.cmd
+            # First we stop a previous pipeline run, if existing...
+            # Next we start the new pipeline run given the observation
+            print "Starting", obs
+            # Finally we send an email notifying people about the run
             self.email.send("Processing %s" % (obs), msg)
         else:
             print "Skipping", obs
