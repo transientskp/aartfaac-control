@@ -9,7 +9,7 @@ class MailNotify:
         self.mail_from = mfrom
         self.mail_to = mto
 
-    def send(self, subject, msg):
+    def send(self, subject, msg, dryrun=False):
         """
         Sends a standard email with a subject and msg
         """
@@ -17,18 +17,21 @@ class MailNotify:
         mail['Subject'] = subject
         mail['From'] = self.mail_from
         mail['To'] = self.mail_to
-        s = smtplib.SMTP()
-        s.connect()
-        s.sendmail(self.mail_from, [self.mail_to], mail.as_string())
-        s.close()
+        if dryrun:
+            print mail
+        else:
+            s = smtplib.SMTP()
+            s.connect()
+            s.sendmail(self.mail_from, [self.mail_to], mail.as_string())
+            s.close()
 
-    def error(self, msg):
+    def error(self, msg, dryrun=False):
         """
         We hook this method to the twisted log such that we get the error dict
         See http://twistedmatrix.com/documents/11.1.0/core/howto/logging.html#auto4
         """
         if msg['isError']:
           if msg.has_key('failure'):
-            self.send("Processing Error", str(msg))
+            self.send("Processing Error", str(msg), dryrun)
           else:
-            self.send("Processing Error", str(msg))
+            self.send("Processing Error", str(msg), dryrun)
