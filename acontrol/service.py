@@ -46,7 +46,8 @@ def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"]
+        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"],
+        ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
     optFlags = [
@@ -172,7 +173,7 @@ class WorkerService(Service):
 
 def makeService(config):
     acontrol_service = MultiService()
-    email = MailNotify()
+    email = MailNotify(config['maillist'])
     log.addObserver(email.error)
     worker_service = WorkerService(config, email)
     worker_service.setName("Worker")

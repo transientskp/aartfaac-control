@@ -2,12 +2,11 @@ import smtplib
 from email.MIMEText import MIMEText
 
 FROM = "acontrol@mcu001.control.lofar"
-TO = "folkerthuizinga@gmail.com"
 
 class MailNotify:
-    def __init__(self, mfrom=FROM, mto=TO):
+    def __init__(self, mailfile='maillist.txt', mfrom=FROM):
         self.mail_from = mfrom
-        self.mail_to = mto
+        self.filename = mailfile
 
     def send(self, subject, msg, dryrun=False):
         """
@@ -16,14 +15,18 @@ class MailNotify:
         mail = MIMEText(msg)
         mail['Subject'] = subject
         mail['From'] = self.mail_from
-        mail['To'] = self.mail_to
+        f = open(self.filename)
+        mailto = filter(self.address, f.read().split('\n'))
+        mail['To'] = ', '.join(mailto)
+
         if dryrun:
             print mail
         else:
             s = smtplib.SMTP()
             s.connect()
-            s.sendmail(self.mail_from, [self.mail_to], mail.as_string())
+            s.sendmail(self.mail_from, mailto, mail.as_string())
             s.close()
+
 
     def error(self, msg, dryrun=False):
         """
@@ -35,3 +38,6 @@ class MailNotify:
             self.send("Processing Error", str(msg), dryrun)
           else:
             self.send("Processing Error", str(msg), dryrun)
+
+    def address(self, addr):
+        return len(addr) > 0 and '@' in addr
