@@ -5,6 +5,7 @@ import glob
 
 from acontrol.observation import Observation
 from acontrol.mailnotify import MailNotify
+from acontrol.connection import Connection
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -18,6 +19,9 @@ from twisted.application.service import Service, MultiService
 FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
+PORT = 45000
+#HOSTS = [("gpu02", "10.144.6.14", PORT), ("ads001","10.144.6.12", PORT)]
+HOSTS = [("local","127.0.0.1", PORT)]
 
 
 def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
@@ -42,7 +46,8 @@ def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"]
+        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"],
+        ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
     optFlags = [
@@ -92,12 +97,40 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self.available and obs.is_valid():
+            success = True
             msg = ""
-            # First we stop a previous pipeline run, if existing...
+            for host in HOSTS:
+                c = Connection()
+                c.connect(host[1], host[2])
+                # First we stop a previous pipeline run, if existing...
+                response = c.send("0 STOP")
+                if response != Connection.OK:
+                    msg += "Host %s got `%s' when trying to stop\n" % (host[0], response)
+                    success = False
+                    c.close()
+                    break
+
+                # Now we (re) start this process
+                response = c.send("0 START")
+                if response != Connection.OK:
+                    msg += "Host %s got `%s' when trying to start\n" % (host[0], response)
+                    success = False
+                    c.close()
+                    break
+
+                msg += "Host `%s' successfully started\n" % (host[0])
+                c.close()
+
+
             # Next we start the new pipeline run given the observation
-            print "Starting", obs
+            if success:
+                msg += "All processes started successfully\n"
+                print "Starting", obs
+            else:
+                print "Failure when initiating", obs
+
             # Finally we send an email notifying people about the run
-            self.email.send("Processing %s" % (obs), msg)
+            self.email.send("Observation %s" % (obs), msg, self._dryrun)
         else:
             print "Skipping", obs
 
@@ -140,7 +173,7 @@ class WorkerService(Service):
 
 def makeService(config):
     acontrol_service = MultiService()
-    email = MailNotify()
+    email = MailNotify(config['maillist'])
     log.addObserver(email.error)
     worker_service = WorkerService(config, email)
     worker_service.setName("Worker")

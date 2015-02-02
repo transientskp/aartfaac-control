@@ -12,5 +12,5 @@ setup(
     author_email="swinbank@aartfaac.org",
     maintainer="Folkert Huizinga",
     maintainer_email="f.huizinga@uva.nl", 
-    requires=['twisted', 'paramiko']
+    requires=['twisted']
 )
