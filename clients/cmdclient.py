@@ -38,10 +38,9 @@ class cmdClient:
 		self._fid.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1);
 		print '--> Binding on port ', self._cmdport;
 		self._fid.bind( ('', self._cmdport) );
-		self._runcmd = ['date']; # Default command for the baseclass.
+		self._runcmd = 'date'; # Default command for the baseclass.
 
 	def run (self):
-		print 'In run'
 		self._fid.listen(1); # Blocking wait
 		while (self._cmd.strip() != 'QUIT'): 
 			readable, writable, inerror = select.select ([self._fid], [], [], 1);
