@@ -99,22 +99,26 @@ class WorkerService(Service):
             success = True
             msg = ""
             for host in HOSTS:
-                c = Connection(host[1], host[2])
+                c = Connection()
+                c.connect(host[1], host[2])
                 # First we stop a previous pipeline run, if existing...
-                response = c.send("STOP")
+                response = c.send("0 STOP")
                 if response != Connection.OK:
                     msg += "Host %s got `%s' when trying to stop\n" % (host[0], response)
                     success = False
+                    c.close()
                     break
 
                 # Now we (re) start this process
-                response = c.send("START")
+                response = c.send("0 START")
                 if response != Connection.OK:
                     msg += "Host %s got `%s' when trying to start\n" % (host[0], response)
                     success = False
+                    c.close()
                     break
 
                 msg += "Host `%s' successfully started\n" % (host[0])
+                c.close()
 
 
             # Next we start the new pipeline run given the observation
