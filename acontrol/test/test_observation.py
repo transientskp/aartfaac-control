@@ -8,22 +8,23 @@ class ObservationTestCase(TestWithParset):
     def setUp(self):
         super(ObservationTestCase, self).setUp()
         self.observation = Observation(self.parset_file.name)
+        self.start = datetime.datetime(2015, 2, 2, 22, 47, 00)
+        self.stop = datetime.datetime(2015, 2, 2, 23, 48, 00)
 
     def test_times(self):
         self.assertEqual(
             self.observation.start_time,
-            datetime.datetime(2013, 8, 24, 14, 18, 00)
+            self.start
         )
         self.assertEqual(
             self.observation.end_time,
-            datetime.datetime(2013, 8, 24, 14, 29, 00)
+            self.stop
         )
 
     def test_duration(self):
         self.assertEqual(
             self.observation.duration,
-            datetime.datetime(2013, 8, 24, 14, 29, 00) -
-            datetime.datetime(2013, 8, 24, 14, 18, 00)
+            (self.stop - self.start).seconds
         )
 
     def test_sort(self):
