@@ -17,7 +17,7 @@ class Connection:
             self.sock.settimeout(Connection.TIMEOUT)
             self.sock.connect(server_address)
             self.sock.settimeout(None)
-        except IOError:
+        except socket.error:
             return Connection.NOK
         return Connection.OK
 

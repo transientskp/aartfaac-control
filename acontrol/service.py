@@ -101,7 +101,14 @@ class WorkerService(Service):
             msg = ""
             for host in HOSTS:
                 c = Connection()
-                c.connect(host[1], host[2])
+
+                # Try to connect
+                if c.connect(host[1], host[2]) != Connection.OK:
+                    msg += "Unable to connect to `%s:%i'" % (host[1], host[2])
+                    success = False
+                    c.close()
+                    break
+
                 # First we stop a previous pipeline run, if existing...
                 response = c.send("0 STOP")
                 if response != Connection.OK:
