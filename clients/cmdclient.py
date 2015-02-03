@@ -25,6 +25,7 @@ import thread;
 import subprocess;
 import time;
 import argparse;
+import select;
 
 class cmdClient:
 	_cmdport = 45000; # Port on which command server should connect.
@@ -34,52 +35,67 @@ class cmdClient:
 		self._cmd = 'READY';
 		self._cmdargs = '';
 		self._fid = socket.socket (socket.AF_INET, socket.SOCK_STREAM);
+		self._fid.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1);
 		print '--> Binding on port ', self._cmdport;
 		self._fid.bind( ('', self._cmdport) );
-		self._runcmd = ['date']; # Default command for the baseclass.
+		self._runcmd = 'date'; # Default command for the baseclass.
 
 	def run (self):
-		print 'In run'
+		self._fid.listen(1); # Blocking wait
 		while (self._cmd.strip() != 'QUIT'): 
-			self._fid.listen(1); # Blocking wait
-			self._servsock, self._servaddr = self._fid.accept();
-			print '--> Received connection from: ', self._servaddr;
-			thread.start_new_thread (self.threadhdlr,());
+			readable, writable, inerror = select.select ([self._fid], [], [], 1);
+			for s in readable:
+				if s is self._fid:
+					self._servsock, self._servaddr = self._fid.accept();
+					print '--> Received connection from: ', self._servaddr;
+					thread.start_new_thread (self.threadhdlr,());
 
 	def threadhdlr (self):
-		# NOTE: Had to strip whitespaces, for some reason received commands have 
-		# a couple of extra whitespaces at the end. 
-		self._recvline = str(self._servsock.recv (1024)).strip().split(' ');
-		print 'Received: ', self._recvline, 'len:', len(self._recvline);
 
-		self._cmdproto = self._recvline[0];
-		if (self._cmdproto != '0'):
-			self._status = 'NOK';
-			return;
-			
-		self._cmd = self._recvline[1];
-		self._cmdargs = (' ').join (self._recvline[2:]);
-		print 'cmd: ', self._cmd, 'cmdargs: ', self._cmdargs;
-		self._status = 'OK';
-		if self._cmd is 'START':
-			try:
-				cmdout = subprocess.check_call (self._runcmd, self._cmdargs, shell=True);
-			except CalledProcessError:
-				print 'Error in executing process!';
+		while (self._cmd.strip() != 'QUIT'):
+			# NOTE: Had to strip whitespaces, for some reason received commands have 
+			# a couple of extra whitespaces at the end. 
+			self._recvline = str(self._servsock.recv (1024)).strip().split(' ');
+			print 'Received: ', self._recvline, 'len:', len(self._recvline);
+	
+			self._cmdproto = self._recvline[0];
+			if (self._cmdproto != '0'):
 				self._status = 'NOK';
+				return;
+				
+			self._cmd = self._recvline[1].strip();
+			self._cmdargs = (' ').join (self._recvline[2:]);
+			print 'cmd: ', self._cmd, 'cmdargs: ', self._cmdargs;
+			self._status = 'NOK';
 
-			self._status = self.checkRunStatus(cmdout);
+			if self._cmd == 'START':
+				print 'Running cmdstr:', [self._runcmd, self._cmdargs];
+				try:
+					cmdout = subprocess.check_call ([self._runcmd, self._cmdargs], shell=True);
+				except subprocess.CalledProcessError:
+					print 'Error in executing process!';
+					self._status = 'NOK';
+	
+				self._status = self.checkRunStatus(cmdout);
+				print 'Successfully ran cmd, status:', self._status;
+				
+	
+			elif self._cmd == 'STOP':
+				# TODO.
+	#			try:
+	#				cmdout = subprocess.check_call (self._runcmd, shell=True);
+	#			except CalledProcessError:
+	#				print 'Error in executing process!';
+				self._status = 'OK';
 
+			elif self._cmd == 'QUIT':
+				self._status = 'OK';
 
-		elif self._cmd is 'STOP':
-			# TODO.
-#			try:
-#				cmdout = subprocess.check_call (self._runcmd, shell=True);
-#			except CalledProcessError:
-#				print 'Error in executing process!';
-			self._status = 'OK';
+			else:
+				self._status = 'NOK';
+	
+			self._servsock.send(self._status);
 
-		self._servsock.send(self._status);
 
 	# Method to show the history of commands received by this cmdclient
 	# TODO
@@ -100,7 +116,7 @@ class pelicanServerCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
 		# self._runcmd = ['start_server.py.in'];
-		self._runcmd = ['date'];
+		self._runcmd = 'date';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -109,7 +125,7 @@ class pipelineCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
 		# self._runcmd = ['start_pipeline.py.in'];
-		self._runcmd = ['date'];
+		self._runcmd = 'date ';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -117,7 +133,7 @@ class pipelineCmdClient (cmdClient):
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = ['date'];
+		self._runcmd = 'date ';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -125,7 +141,7 @@ class gpuCorrCmdClient (cmdClient):
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = ['ls -l'];
+		self._runcmd = 'ls -l';
 
 	def checkRunStatus (self, output):
 		return 'OK';
