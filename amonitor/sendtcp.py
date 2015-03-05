@@ -21,7 +21,7 @@ if __name__ == '__main__':
 	with open (sys.argv[2]) as fp:
 		for line in fp:
 			_fid.send(line);
-			time.sleep(0.1);
+			time.sleep(0.01);
 
 	print 'Done.';
 			

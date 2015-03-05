@@ -42,6 +42,7 @@ class cmdClient:
 		self._fid.bind( ('', self._cmdport) );
 		self._runcmd = 'date'; # Default command for the baseclass.
 		self._threadid = -1;   # Will be used to store threadid of command to be run.
+		self._env = os.environ.copy();
 
 	def run (self):
 		self._fid.listen(1); # Blocking wait
@@ -68,14 +69,17 @@ class cmdClient:
 				return;
 				
 			self._cmd = self._recvline[1].strip();
-			self._cmdargs = (' ').join (self._recvline[2:]);
+			# self._cmdargs = (' ').join (self._recvline[2:]);
+			self._cmdargs = self._recvline[2:];	
 			print 'cmd: ', self._cmd, 'cmdargs: ', self._cmdargs;
 			self._status = 'NOK';
 
 			if self._cmd == 'START':
 				print 'Running cmdstr:', [self._runcmd, self._cmdargs];
 				try:
-					self._proc = subprocess.Popen ([self._runcmd, self._cmdargs], shell=True);
+					self._cmdargs.insert(0, self._runcmd);
+					self._proc = subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE);
+					self._pipe = subprocess.Popen (['nc', '10.87.0.112', '40000'], stdin=self._proc.stdout);
 					# We only store the id of the thread which starts a command.
 					self._threadid = thread.get_ident(); 
 				except subprocess.CalledProcessError:
@@ -138,8 +142,13 @@ class pipelineCmdClient (cmdClient):
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		# self._runcmd = 'watch -n1 date ';
-		self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
+		# self._runcmd = 'watch -n1 date';
+		# self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
+		self._env["DISPLAY"]=":0";
+		self._env["PLATFORM"]="AMD Accelerated Parallel Processing";
+		self._env["TYPE"] = "GPU"
+		# self._runcmd = 'numactl -C 11-19 /home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC ';
+		self._runcmd = '/home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC';
 
 	def checkRunStatus (self, output):
 		return 'OK';
