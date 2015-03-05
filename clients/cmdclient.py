@@ -26,6 +26,8 @@ import subprocess;
 import time;
 import argparse;
 import select;
+import os;
+import signal;
 
 class cmdClient:
 	_cmdport = 45000; # Port on which command server should connect.
@@ -39,6 +41,7 @@ class cmdClient:
 		print '--> Binding on port ', self._cmdport;
 		self._fid.bind( ('', self._cmdport) );
 		self._runcmd = 'date'; # Default command for the baseclass.
+		self._threadid = -1;   # Will be used to store threadid of command to be run.
 
 	def run (self):
 		self._fid.listen(1); # Blocking wait
@@ -50,6 +53,7 @@ class cmdClient:
 					print '--> Received connection from: ', self._servaddr;
 					thread.start_new_thread (self.threadhdlr,());
 
+	# Thread to service incoming commands.
 	def threadhdlr (self):
 
 		while (self._cmd.strip() != 'QUIT'):
@@ -71,21 +75,22 @@ class cmdClient:
 			if self._cmd == 'START':
 				print 'Running cmdstr:', [self._runcmd, self._cmdargs];
 				try:
-					cmdout = subprocess.check_call ([self._runcmd, self._cmdargs], shell=True);
+					self._proc = subprocess.Popen ([self._runcmd, self._cmdargs], shell=True);
+					# We only store the id of the thread which starts a command.
+					self._threadid = thread.get_ident(); 
 				except subprocess.CalledProcessError:
 					print 'Error in executing process!';
 					self._status = 'NOK';
 	
-				self._status = self.checkRunStatus(cmdout);
+				# self._status = self.checkRunStatus(cmdout);
 				print 'Successfully ran cmd, status:', self._status;
 				
 	
 			elif self._cmd == 'STOP':
-				# TODO.
-	#			try:
-	#				cmdout = subprocess.check_call (self._runcmd, shell=True);
-	#			except CalledProcessError:
-	#				print 'Error in executing process!';
+				if (self._threadid > 0):
+					print 'Killing pid ', self._proc.pid;
+					os.kill (self._proc.pid, signal.SIGTERM);
+					
 				self._status = 'OK';
 
 			elif self._cmd == 'QUIT':
@@ -116,7 +121,7 @@ class pelicanServerCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
 		# self._runcmd = ['start_server.py.in'];
-		self._runcmd = 'date';
+		self._runcmd = 'watch -n1 date';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -125,7 +130,7 @@ class pipelineCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
 		# self._runcmd = ['start_pipeline.py.in'];
-		self._runcmd = 'date ';
+		self._runcmd = 'watch -n1 date ';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -133,7 +138,8 @@ class pipelineCmdClient (cmdClient):
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = 'date ';
+		# self._runcmd = 'watch -n1 date ';
+		self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -141,7 +147,7 @@ class gpuCorrCmdClient (cmdClient):
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = 'ls -l';
+		self._runcmd = 'watch -n1 date';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -149,19 +155,19 @@ class lcuafaacCmdClient (cmdClient):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--procblk", help="Specify which processing block cmdclient controls", default='gpucorr');
+	parser.add_argument("--procblk", help="Specify which processing block this cmdclient controls. Options: gpucorr = GPU correlator\n lcuafaac = AARTFAAC LCU ,pelicanpipeline = Pelican pipeline, pelicanserver = Pelican Server.", default='gpucorr');
 	client = parser.parse_args();
 
-	if client.procblk == 'gpucorr':
+	if client.procblk.lower() == 'gpucorr':
 		cl = gpuCorrCmdClient ();
 
-	elif client.procblk == 'lcu':
+	elif client.procblk.lower() == 'lcuafaac':
 		cl = lcuafaacCmdClient();	
 
-	elif client.procblk == 'pipe':
+	elif client.procblk.lower() == 'pelicanpipeline':
 		cl = pipelineCmdClient();
 
-	elif client.procblk == 'pelican':
+	elif client.procblk.lower() == 'pelicanserver':
 		cl = pelicanserverCmdClient();
 
 	else:
