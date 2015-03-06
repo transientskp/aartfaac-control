@@ -60,26 +60,25 @@ class cmdClient:
 		while (self._cmd.strip() != 'QUIT'):
 			# NOTE: Had to strip whitespaces, for some reason received commands have 
 			# a couple of extra whitespaces at the end. 
-			self._recvline = str(self._servsock.recv (1024)).strip().split(' ');
+			self._recvline = str(self._servsock.recv (1024)).strip();
 			print 'Received: ', self._recvline, 'len:', len(self._recvline);
 	
-			self._cmdproto = self._recvline[0];
+			self._cmdproto = self._recvline.split(' ')[0];
 			if (self._cmdproto != '0'):
 				self._status = 'NOK';
 				return;
 				
-			self._cmd = self._recvline[1].strip();
-			# self._cmdargs = (' ').join (self._recvline[2:]);
-			self._cmdargs = self._recvline[2:];	
-			print 'cmd: ', self._cmd, 'cmdargs: ', self._cmdargs;
+			self._cmd = self._recvline.split(' ')[1].strip();
+			print 'cmd: ', self._cmd;
 			self._status = 'NOK';
 
 			if self._cmd == 'START':
-				print 'Running cmdstr:', [self._runcmd, self._cmdargs];
+				
 				try:
+					self._cmdargs = self._recvline.split(' ');
 					self._cmdargs.insert(0, self._runcmd);
-					self._proc = subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE);
-					self._pipe = subprocess.Popen (['nc', '10.87.0.112', '40000'], stdin=self._proc.stdout);
+					print 'Running cmdstr:',  self._cmdargs;
+					self._proc = subprocess.Popen (self._cmdargs, env=self._env);
 					# We only store the id of the thread which starts a command.
 					self._threadid = thread.get_ident(); 
 				except subprocess.CalledProcessError:
@@ -87,9 +86,28 @@ class cmdClient:
 					self._status = 'NOK';
 	
 				# self._status = self.checkRunStatus(cmdout);
+				self._status = 'OK';
 				print 'Successfully ran cmd, status:', self._status;
 				
 	
+			elif self._cmd == 'STARTPIPE':
+				print 'Running cmdstr:', [self._runcmd, self._cmdargs];
+				try:
+					self._cmdargs = self._recvline.split('|')[0].strip().split(' ');
+					self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
+					self._cmdargs.insert(0, self._runcmd);
+					print 'Running cmdstr:',  self._cmdargs;
+					self._proc = subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT);
+					self._pipe = subprocess.Popen (self._pipecmd, stdin=self._proc.stdout);
+					# We only store the id of the thread which starts a command.
+					self._threadid = thread.get_ident(); 
+				except subprocess.CalledProcessError:
+					print 'Error in executing process!';
+					self._status = 'NOK';
+
+				self._status = 'OK';
+				print 'Successfully ran cmd, status:', self._status;
+				
 			elif self._cmd == 'STOP':
 				if (self._threadid > 0):
 					print 'Killing pid ', self._proc.pid;
@@ -124,8 +142,8 @@ class cmdClient:
 class pelicanServerCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		# self._runcmd = ['start_server.py.in'];
-		self._runcmd = 'watch -n1 date';
+		self._runcmd = 'start_server.py';
+		# self._runcmd = 'watch -n1 date';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -133,8 +151,8 @@ class pelicanServerCmdClient (cmdClient):
 class pipelineCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		# self._runcmd = ['start_pipeline.py.in'];
-		self._runcmd = 'watch -n1 date ';
+		self._runcmd = 'start_pipeline.py';
+		# self._runcmd = 'watch -n1 date ';
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -177,7 +195,7 @@ if __name__ == '__main__':
 		cl = pipelineCmdClient();
 
 	elif client.procblk.lower() == 'pelicanserver':
-		cl = pelicanserverCmdClient();
+		cl = pelicanServerCmdClient();
 
 	else:
 		print '### Unknown processing block!';
