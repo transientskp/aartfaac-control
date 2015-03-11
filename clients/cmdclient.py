@@ -180,6 +180,13 @@ class lcuafaacCmdClient (cmdClient):
 		return 'OK';
 
 
+class rtmonCmdClient (cmdClient):
+	def __init__ (self):
+		cmdClient.__init__(self);
+		self._runcmd = '/home/prasad/aartfaac-tools/python/rtmon.py';
+
+	def checkRunStatus (self, output):
+		return 'OK';
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--procblk", help="Specify which processing block this cmdclient controls. Options: gpucorr = GPU correlator\n lcuafaac = AARTFAAC LCU ,pelicanpipeline = Pelican pipeline, pelicanserver = Pelican Server.", default='gpucorr');
@@ -196,6 +203,9 @@ if __name__ == '__main__':
 
 	elif client.procblk.lower() == 'pelicanserver':
 		cl = pelicanServerCmdClient();
+
+	elif client.procblk.lower() == 'rtmon':
+		cl = rtmonCmdClient ();
 
 	else:
 		print '### Unknown processing block!';
