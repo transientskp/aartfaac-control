@@ -183,7 +183,7 @@ class lcuafaacCmdClient (cmdClient):
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = '/home/prasad/aartfaac-tools/python/rtmon.py';
+		self._runcmd = 'rtmon.py';
 
 	def checkRunStatus (self, output):
 		return 'OK';
