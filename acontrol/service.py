@@ -20,8 +20,10 @@ FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 PORT = 45000
-#HOSTS = [("gpu02", "10.144.6.14", PORT), ("ads001","10.144.6.12", PORT)]
-HOSTS = [("local","127.0.0.1", PORT)]
+HOSTS = [
+  ("gpu02", "10.144.6.14", PORT, "0 STARTPIPE -p0 -n288 -t3072 -c64 -d0 -g0,1 -b16 -s8 -R1 -r604800 -i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308 -o tcp:10.144.6.12:5000,null:,null:,null:,null:,null:,null:,null:  2>&1 | tee acontrol.log"), 
+  ("ads001","10.144.6.13", PORT, "0 START --antpos=/usr/local/share/aartfaac/antennasets/lba_outer.dat --output=/tmp/rtmon.png --freq=53906250.0")
+]
 
 
 def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
@@ -118,14 +120,16 @@ class WorkerService(Service):
                     break
 
                 # Now we (re) start this process
-                response = c.send("0 START")
+                response = c.send(host[3])
                 if response != Connection.OK:
                     msg += "Host %s got `%s' when trying to start\n" % (host[0], response)
+                    msg += "  " + host[3]
                     success = False
                     c.close()
                     break
 
                 msg += "Host `%s' successfully started\n" % (host[0])
+                msg += "  " + host[3]
                 c.close()
 
 
