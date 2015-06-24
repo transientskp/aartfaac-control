@@ -5,8 +5,8 @@ import random
 import time
 import datetime
 
-TIME_BETWEEN = 10
-TIME_DURATION = 60
+TIME_BETWEEN = 60
+TIME_DURATION = 360
 
 sys.path.append(os.path.abspath('acontrol'))
 from parset import Parset
@@ -23,8 +23,8 @@ if __name__ == "__main__":
 
     filename = 'MCU001:ObservationControl[0]{%06d}' % (i)
 
-    p.replace('ObsSW.Observation.startTime', starttime.strftime("%Y-%m-%d %H:%M:%S"))
-    p.replace('ObsSW.Observation.endTime', endtime.strftime("%Y-%m-%d %H:%M:%S"))
+    p.replace('Observation.startTime', starttime.strftime("%Y-%m-%d %H:%M:%S"))
+    p.replace('Observation.endTime', endtime.strftime("%Y-%m-%d %H:%M:%S"))
     p.writeFile('data/%s' % (filename))
 
     i += 1
