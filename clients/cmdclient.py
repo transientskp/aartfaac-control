@@ -63,20 +63,22 @@ class cmdClient:
 			self._recvline = str(self._servsock.recv (1024)).strip();
 			print 'Received: ', self._recvline, 'len:', len(self._recvline);
 	
-			self._cmdproto = self._recvline.split(' ')[0];
+			splitstr = self._recvline.split(' ');
+			self._cmdproto = splitstr[0];
 			if (self._cmdproto != '0'):
 				self._status = 'NOK';
 				return;
 				
-			self._cmd = self._recvline.split(' ')[1].strip();
+			self._cmd = splitstr[1].strip();
 			print 'cmd: ', self._cmd;
 			self._status = 'NOK';
 
 			if self._cmd == 'START':
 				
 				try:
-					self._cmdargs = self._recvline.split(' ');
-					self._cmdargs.insert(0, self._runcmd);
+					self._cmdargs = splitstr[2:len(splitstr)];
+					self._cmdargs[0:0] = self._runcmd;
+					# self._cmdargs.insert(0, self._runcmd);
 					print 'Running cmdstr:',  self._cmdargs;
 					self._proc = subprocess.Popen (self._cmdargs, env=self._env);
 					# We only store the id of the thread which starts a command.
@@ -87,7 +89,7 @@ class cmdClient:
 	
 				# self._status = self.checkRunStatus(cmdout);
 				self._status = 'OK';
-				print 'Successfully ran cmd, status:', self._status;
+				print 'Successfully started process for cmd execution, status:', self._status;
 				
 	
 			elif self._cmd == 'STARTPIPE':
@@ -95,7 +97,8 @@ class cmdClient:
 				try:
 					self._cmdargs = self._recvline.split('|')[0].strip().split(' ');
 					self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
-					self._cmdargs.insert(0, self._runcmd);
+					self._cmdargs[0:0] = self._runcmd;
+					# self._cmdargs.insert(0, self._runcmd);
 					print 'Running cmdstr:',  self._cmdargs;
 					self._proc = subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT);
 					self._pipe = subprocess.Popen (self._pipecmd, stdin=self._proc.stdout);
@@ -183,7 +186,8 @@ class lcuafaacCmdClient (cmdClient):
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = 'rtmon.py';
+		# self._runcmd = 'rtmon.py';
+		self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
