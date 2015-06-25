@@ -14,10 +14,13 @@
 #   
 #   - Security: The command to run is hardcoded in the program. Only the command arguments 
 #	 are received over the socket. These can be encrypted in future.     
-# TODO:
-#   - Parse output, generate OK/NOK correctly
-#   - Figure out a nice way to stop the process.
 # pep/29Jan15
+# - Cleared NOK/OK return issues. Multiple transactions now possible on a single TCP session.
+# - STOPing a process possible.
+# - QUITing cmdclient over TCP possible.
+# - Added a ncmdcalls parameter, in case a cmdclient running on a single host needs to run the same command multiple times.
+# - Added a genrepeat() function which generates the commandline for a repeat execution.
+# - The repeat parameter also allows running different commands on the same host.
 
 import sys;
 import socket;
@@ -35,6 +38,7 @@ class cmdClient:
 
 	def __init__ (self):
 		self._cmd = 'READY';
+		self._ncmdcalls = 1; # This instance does not repeat the execution of the desired command.
 		self._cmdargs = '';
 		print '--> Registering signal handler.';
 		signal.signal (signal.SIGINT, self.sighdlr);
@@ -44,7 +48,8 @@ class cmdClient:
 		print '--> Binding on port ', self._cmdport;
 		self._fid.bind( ('', self._cmdport) );
 		self._runcmd = ['date']; # Default command for the baseclass.
-		self._threadid = -1;   # Will be used to store threadid of command to be run.
+		self._proc = [None];
+		self._threadid = [-1];   # Will be used to store threadid of command to be run.
 		self._env = os.environ.copy();
 
 	def run (self):
@@ -56,6 +61,12 @@ class cmdClient:
 					self._servsock, self._servaddr = self._fid.accept();
 					print '--> Received connection from: ', self._servaddr;
 					thread.start_new_thread (self.threadhdlr,());
+
+	def genrepeatcmd (self, repid):
+		splitstr = self._recvline.split(' ');
+		self._cmdargs = splitstr[2:len(splitstr)];
+		return;
+		# raise NotImplementedError ("Subclass must implement abstract method.");
 
 	# Signal handler for clean exit on SIGINT and SIGTERM
 	def sighdlr (self, signal, frame):
@@ -84,18 +95,23 @@ class cmdClient:
 			print 'cmd: ', self._cmd;
 
 			if self._cmd == 'START':
-				
-				try:
-					self._cmdargs = splitstr[2:len(splitstr)];
+				self._cmdargs = splitstr[2:len(splitstr)];
+				# Repeat the command if required, asking genrepeatcmd() 
+				# to generate the appropriate command
+				for ind in range (0, self._ncmdcalls):
+					self.genrepeatcmd (ind);
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
-					print 'Running cmdstr:',  self._cmdargs;
-					self._proc = subprocess.Popen (self._cmdargs, env=self._env);
-					# We only store the id of the thread which starts a command.
-					self._threadid = thread.get_ident(); 
-				except subprocess.CalledProcessError:
-					print 'Error in executing process!';
-					self._status = 'NOK';
+					print '<-- Running cmdstr:',  self._cmdargs;
+					try:
+						self._proc[ind] = subprocess.Popen (self._cmdargs, env=self._env);
+						# We only store the id of the thread which starts a command.
+						self._threadid[ind] = thread.get_ident(); 
+						
+					except subprocess.CalledProcessError:
+						print 'Error in executing process!';
+						self._status = 'NOK';
+					print '<-- Created process with pid %d, threadid %d.' %(self._proc[ind].pid, self._threadid[ind]);
 	
 				# self._status = self.checkRunStatus(cmdout);
 				self._status = 'OK';
@@ -104,27 +120,30 @@ class cmdClient:
 	
 			elif self._cmd == 'STARTPIPE':
 				print 'Running cmdstr:', [self._runcmd, self._cmdargs];
-				try:
-					self._cmdargs = self._recvline.split('|')[0].strip().split(' ');
-					self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
+				self._cmdargs = self._recvline.split('|')[0].strip().split(' ');
+				self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
+				for ind in range (0, self._ncmdcalls):
+					self.genrepeatcmd(ind);
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
 					print 'Running cmdstr:',  self._cmdargs;
-					self._proc = subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT);
-					self._pipe = subprocess.Popen (self._pipecmd, stdin=self._proc.stdout);
-					# We only store the id of the thread which starts a command.
-					self._threadid = thread.get_ident(); 
-				except subprocess.CalledProcessError:
-					print 'Error in executing process!';
-					self._status = 'NOK';
+					try:
+						self._proc[ind] = subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT);
+						self._pipe[ind] = subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout);
+						# We only store the id of the thread which starts a command.
+						self._threadid[ind] = thread.get_ident(); 
+					except subprocess.CalledProcessError:
+						print 'Error in executing process!';
+						self._status = 'NOK';
 
 				self._status = 'OK';
 				print 'Successfully ran cmd, status:', self._status;
 				
 			elif self._cmd == 'STOP':
-				if (self._threadid > 0):
-					print 'Killing pid ', self._proc.pid;
-					os.kill (self._proc.pid, signal.SIGTERM);
+				for ind in range (0, self._ncmdcalls):
+					if (self._threadid[ind] > 0):
+						print 'Killing pid ', self._proc[ind].pid;
+						os.kill (self._proc[ind].pid, signal.SIGTERM);
 					
 				self._status = 'OK';
 
@@ -164,15 +183,31 @@ class pelicanServerCmdClient (cmdClient):
 	def checkRunStatus (self, output):
 		return 'OK';
 
+
+# Multiple pipelines need to be started based on the number of processors 
+# available on the client machine.
+# We reimplement the  genrepeatcmd() function for this.
 class pipelineCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
 		self._runcmd = ['start_pipeline.py'];
+		self._ncmdcalls = 4;
 		# self._runcmd = 'watch -n1 date ';
 
 	def checkRunStatus (self, output):
 		return 'OK';
 
+	# Generate a new monitor port for each instantiation.
+	# We assume the command arguments are of the form:
+	# 192.168.1.1 4200 /data/output
+	def genrepeatcmd (self, repid):
+		index = self._recvline.find('--monitor-port');
+		monport=int(self._recvline[index:].split(' ')[1]);
+		recvline_copy = self._recvline.replace(str(monport), str(monport+repid)); # Make changes to the copy
+		splitstr = recvline_copy.split(' ');
+		self._cmdargs = splitstr[2:len(splitstr)];
+		return;
+	
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
@@ -187,6 +222,7 @@ class gpuCorrCmdClient (cmdClient):
 	def checkRunStatus (self, output):
 		return 'OK';
 
+
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
@@ -195,6 +231,10 @@ class lcuafaacCmdClient (cmdClient):
 	def checkRunStatus (self, output):
 		return 'OK';
 
+	def genrepeatcmd (self, repid):
+		splitstr = self._recvline.split(' ');
+		self._cmdargs = splitstr[2:len(splitstr)];
+		return;
 
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
@@ -204,6 +244,8 @@ class rtmonCmdClient (cmdClient):
 
 	def checkRunStatus (self, output):
 		return 'OK';
+
+
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--procblk", help="Specify which processing block this cmdclient controls. Options: gpucorr = GPU correlator\n lcuafaac = AARTFAAC LCU ,pelicanpipeline = Pelican pipeline, pelicanserver = Pelican Server.", default='gpucorr');
