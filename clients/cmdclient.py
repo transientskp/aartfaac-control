@@ -36,11 +36,14 @@ class cmdClient:
 	def __init__ (self):
 		self._cmd = 'READY';
 		self._cmdargs = '';
+		print '--> Registering signal handler.';
+		signal.signal (signal.SIGINT, self.sighdlr);
+		signal.signal (signal.SIGTERM, self.sighdlr);
 		self._fid = socket.socket (socket.AF_INET, socket.SOCK_STREAM);
 		self._fid.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1);
 		print '--> Binding on port ', self._cmdport;
 		self._fid.bind( ('', self._cmdport) );
-		self._runcmd = 'date'; # Default command for the baseclass.
+		self._runcmd = ['date']; # Default command for the baseclass.
 		self._threadid = -1;   # Will be used to store threadid of command to be run.
 		self._env = os.environ.copy();
 
@@ -54,6 +57,12 @@ class cmdClient:
 					print '--> Received connection from: ', self._servaddr;
 					thread.start_new_thread (self.threadhdlr,());
 
+	# Signal handler for clean exit on SIGINT and SIGTERM
+	def sighdlr (self, signal, frame):
+		print '## Signal received! Clean quitting.';
+		self._cmd = 'QUIT'
+			
+
 	# Thread to service incoming commands.
 	def threadhdlr (self):
 
@@ -63,15 +72,16 @@ class cmdClient:
 			self._recvline = str(self._servsock.recv (1024)).strip();
 			print 'Received: ', self._recvline, 'len:', len(self._recvline);
 	
+			self._status = 'NOK';
 			splitstr = self._recvline.split(' ');
 			self._cmdproto = splitstr[0];
 			if (self._cmdproto != '0'):
-				self._status = 'NOK';
-				return;
+				print '### Invalid command protocol! Try again.';
+				self._servsock.send(self._status);
+				continue;
 				
 			self._cmd = splitstr[1].strip();
 			print 'cmd: ', self._cmd;
-			self._status = 'NOK';
 
 			if self._cmd == 'START':
 				
@@ -122,6 +132,7 @@ class cmdClient:
 				self._status = 'OK';
 
 			else:
+				print '### Cmd %s not understood. Try again.' % self._cmd;
 				self._status = 'NOK';
 	
 			self._servsock.send(self._status);
@@ -135,7 +146,9 @@ class cmdClient:
 	def __del__(self):
 		# Send termination signal to all threads
 		# TODO.
-		self._fid.close();	
+		if (hasattr(self, '_fid')):
+			print '<-- Closing socket.';
+			self._fid.close();	
 	
 # Processing block specific Cmdclient. Should override the checkRunStatus ()
 # method to implement block specific stdout parsing. TODO.
@@ -145,7 +158,7 @@ class cmdClient:
 class pelicanServerCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = 'start_server.py';
+		self._runcmd = ['start_server.py'];
 		# self._runcmd = 'watch -n1 date';
 
 	def checkRunStatus (self, output):
@@ -154,7 +167,7 @@ class pelicanServerCmdClient (cmdClient):
 class pipelineCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = 'start_pipeline.py';
+		self._runcmd = ['start_pipeline.py'];
 		# self._runcmd = 'watch -n1 date ';
 
 	def checkRunStatus (self, output):
@@ -169,7 +182,7 @@ class gpuCorrCmdClient (cmdClient):
 		self._env["PLATFORM"]="AMD Accelerated Parallel Processing";
 		self._env["TYPE"] = "GPU"
 		# self._runcmd = 'numactl -C 11-19 /home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC ';
-		self._runcmd = '/home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC';
+		self._runcmd = ['/home/pprasad/gpu-corr/Triple-A/AARTFAAC/AARTFAAC'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -177,7 +190,7 @@ class gpuCorrCmdClient (cmdClient):
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		self._runcmd = 'watch -n1 date';
+		self._runcmd = ['watch -n1 date'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -186,8 +199,8 @@ class lcuafaacCmdClient (cmdClient):
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
-		# self._runcmd = 'rtmon.py';
-		self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
+		self._runcmd = ['atv.py'];
+		# self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
@@ -216,4 +229,5 @@ if __name__ == '__main__':
 		sys.exit (-1);
 
 	cl.run();	
+	del (cl);
 
