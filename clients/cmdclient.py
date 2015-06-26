@@ -129,8 +129,8 @@ class cmdClient(object):
 					# self._cmdargs.insert(0, self._runcmd);
 					print '<-- [%s]   Running cmdstr: %s.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
 					try:
-						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT));
-						self._pipe.append(subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout));
+						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn=os.setsid));
+						self._pipe.append(subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout), preexec_fn=os.setid);
 						# We only store the id of the thread which starts a command.
 						self._threadid.append(thread.get_ident()); 
 					except subprocess.CalledProcessError:
