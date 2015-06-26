@@ -61,7 +61,7 @@ class cmdClient(object):
 			for s in readable:
 				if s is self._fid:
 					self._servsock, self._servaddr = self._fid.accept();
-					print '--> [%s]    Received connection from: ' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),self._servaddr);
+					print '--> [%s]    Received connection from: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),self._servaddr);
 					thread.start_new_thread (self.threadhdlr,());
 
 	def genrepeatcmd (self, repid):
@@ -83,7 +83,7 @@ class cmdClient(object):
 			# NOTE: Had to strip whitespaces, for some reason received commands have 
 			# a couple of extra whitespaces at the end. 
 			self._recvline = str(self._servsock.recv (1024)).strip();
-			print '--> [%]   Received: %s, len: %d' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._recvline, len(self._recvline));
+			print '--> [%s]   Received: %s, len: %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._recvline, len(self._recvline));
 	
 			self._status = 'NOK';
 			splitstr = self._recvline.split(' ');
@@ -104,9 +104,9 @@ class cmdClient(object):
 					self.genrepeatcmd (ind);
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
-					print '<-- [%s]   Running cmdstr:' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
+					print '<-- [%s]   Running cmdstr: %s.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
 					try:
-						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env));
+						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, preexec_fn=os.setsid));
 						# We only store the id of the thread which starts a command.
 						self._threadid.append(thread.get_ident()); 
 						
@@ -117,7 +117,7 @@ class cmdClient(object):
 	
 				# self._status = self.checkRunStatus(cmdout);
 				self._status = 'OK';
-				print '<-- [%s]   Successfully started process for cmd execution, status:' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._status);
+				print '<-- [%s]   Successfully started process for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._status);
 				
 	
 			elif self._cmd == 'STARTPIPE':
@@ -127,7 +127,7 @@ class cmdClient(object):
 					self.genrepeatcmd(ind);
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
-					print '<-- [%s]   Running cmdstr:' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
+					print '<-- [%s]   Running cmdstr: %s.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
 					try:
 						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT));
 						self._pipe.append(subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout));
@@ -138,13 +138,14 @@ class cmdClient(object):
 						self._status = 'NOK';
 
 				self._status = 'OK';
-				print '<-- [%s]   Successfully started process for cmd execution, status:' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._status);
+				print '<-- [%s]   Successfully started process for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._status);
 				
 			elif self._cmd == 'STOP':
 				for proc in self._proc:
 					if (proc.poll() == None): # Child  has not terminated
-						print '<-- [%s]   Terminating pid ' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
-						proc.terminate();
+						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
+						os.killpg (proc.pid, signal.SIGTERM);
+						# proc.kill();
 
 				for ind in range (0, len(self._proc)):
 					self._proc.pop();
@@ -152,11 +153,11 @@ class cmdClient(object):
 				self._status = 'OK';
 
 			elif self._cmd == 'QUIT':
-				print '<-- [%s]   Quitting cmdClient' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
+				print '<-- [%s]   Quitting cmdClient.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 				self._status = 'OK';
 
 			else:
-				print '### [%s]   Cmd %s not understood. Try again.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmd);
+				print '### [%s]   Cmd %s not understood. Try again.' % (self._cmd, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmd);
 				self._status = 'NOK';
 	
 			self._servsock.send(self._status);
