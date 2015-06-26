@@ -109,15 +109,17 @@ class cmdClient(object):
 						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, preexec_fn=os.setsid));
 						# We only store the id of the thread which starts a command.
 						self._threadid.append(thread.get_ident()); 
+						self._status = 'OK';
+						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._status);
+						self._servsock.send(self._status);
+						# self._proc[ind].wait();
 						
 					except subprocess.CalledProcessError:
 						print '### [%s]   Error in executing process!' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 						self._status = 'NOK';
-					print '<-- [%s]   Created process with pid %d, threadid %d.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._threadid[ind]);
+						self._servsock.send(self._status);
 	
 				# self._status = self.checkRunStatus(cmdout);
-				self._status = 'OK';
-				print '<-- [%s]   Successfully started process for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._status);
 				
 	
 			elif self._cmd == 'STARTPIPE':
@@ -130,37 +132,43 @@ class cmdClient(object):
 					print '<-- [%s]   Running cmdstr: %s.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
 					try:
 						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn=os.setsid));
-						self._pipe.append(subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout), preexec_fn=os.setid);
+						self._pipe.append(subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout, preexec_fn=os.setsid));
 						# We only store the id of the thread which starts a command.
 						self._threadid.append(thread.get_ident()); 
+						self._status = 'OK';
+						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._status);
+						self._servsock.send(self._status);
+						# self._proc[ind].wait();
 					except subprocess.CalledProcessError:
 						print '### [%s]   Error in executing process!' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 						self._status = 'NOK';
+						self._servsock.send(self._status);
 
-				self._status = 'OK';
-				print '<-- [%s]   Successfully started process for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._status);
 				
 			elif self._cmd == 'STOP':
 				for proc in self._proc:
 					if (proc.poll() == None): # Child  has not terminated
 						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
 						os.killpg (proc.pid, signal.SIGTERM);
+						proc.wait(); # Prevent zombie processes
 						# proc.kill();
 
 				for ind in range (0, len(self._proc)):
 					self._proc.pop();
 					
 				self._status = 'OK';
+				self._servsock.send(self._status);
 
 			elif self._cmd == 'QUIT':
 				print '<-- [%s]   Quitting cmdClient.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 				self._status = 'OK';
+				self._servsock.send(self._status);
 
 			else:
-				print '### [%s]   Cmd %s not understood. Try again.' % (self._cmd, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmd);
+				print '### [%s]   Cmd %s not understood. Try again.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmd);
 				self._status = 'NOK';
+				self._servsock.send(self._status);
 	
-			self._servsock.send(self._status);
 
 
 	# Method to show the history of commands received by this cmdclient
