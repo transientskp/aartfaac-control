@@ -21,9 +21,9 @@ SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 PORT = 45000
 HOSTS = [
-  #("ads001","10.144.6.12", PORT, "0 START --antpos=/usr/local/share/aartfaac/antennasets/lba_outer.dat --output=/var/www/rtmon.png --freq=53906250.0"),
-  ("ads001","10.144.6.12", PORT, "0 START --buffer-max-size 34359738368 --stream 63 57617187.5 3051.757812 0-62"),
-  ("ais001","10.144.6.13", PORT, "0 START --server-host 10.144.6.12 --monitor-port 4200 --casa /data/pprasad/"),
+  ("ads001","10.144.6.12", PORT, "0 START --antpos=/usr/local/share/aartfaac/antennasets/lba_outer.dat --freq=54000000 --output=/data/atv --snapshot=/var/www/"),
+  #("ads001","10.144.6.12", PORT, "0 START --buffer-max-size 34359738368 --stream 63 57617187.5 3051.757812 0-62"),
+  #("ais001","10.144.6.13", PORT, "0 START --server-host 10.144.6.12 --monitor-port 4200 --casa /data/pprasad"),
   ("gpu02", "10.144.6.14", PORT, "0 STARTPIPE -p0 -n288 -t3072 -c64 -d0 -g0,1 -b16 -s8 -R1 -r604800 -i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308 -o tcp:10.144.6.12:5000,tcp:10.144.6.12:4100,null:,null:,null:,null:,null:,null:  2>&1 | tee acontrol.log")
 ]
 
