@@ -10,7 +10,8 @@ The control system is a daemon which runs on the LOFAR Main Control Unit
 extracts relevant details. It maintains a queue of upcoming observations, and,
 where appropriate, configures the RSP boards (on the station Local Control
 Units) to select the appropriate data for AARTFAAC and starts the GPU
-correlator and CPU imaging pipeline with appropriate configuration.
+correlator and CPU imaging pipeline with appropriate configuration using
+an AARTFAAC cfg file.
 
 MCU System Setup
 ----------------
