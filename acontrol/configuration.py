@@ -8,6 +8,7 @@ class Configuration(object):
     def __init__(self, filepath):
         self._parser = ConfigParser.RawConfigParser()
         self._parser.read(filepath)
+        self._filepath = filepath
         ts = time.strptime(self._parser.get("general", "starttime"), "%Y-%m-%d %H:%M:%S")
         self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon, ts.tm_mday,
                 ts.tm_hour, ts.tm_min, ts.tm_sec)
@@ -85,7 +86,7 @@ class Configuration(object):
 
 
     def __str__(self):
-        return "[CFG - %s] %s" % (self.start, [x[0] for x in self.tracklist])
+        return "[CFG - %s] %s" % (self.start_time, self._filepath)
 
 
     def __cmp__(self, other):

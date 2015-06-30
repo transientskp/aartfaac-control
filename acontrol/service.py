@@ -123,13 +123,13 @@ class WorkerService(Service):
             if not self._activeconfig:
                 msg += "No aartfaac configuration loaded\n"
                 success = False
-
-            if not self._activeconfig.is_valid():
+            elif not self._activeconfig.is_valid():
                 msg += "Invalid aartfaac configuration\n"
                 success = False
 
             hosts = []
             if success:
+                msg += "Using aartfaac configuration `%s'\n" % (self._activeconfig._filepath)
                 # TODO: Implement setstations()
                 #self._activeconfig.setstations(obs)
                 hosts.append(self._activeconfig.atv(obs))
@@ -210,7 +210,7 @@ class WorkerService(Service):
         Prepare AARTFAAC telescope for upcomming observations
         """
         self._activeconfig = config
-        print "Set AARTFAAC configuration to ", config
+        print "Set AARTFAAC configuration to", config
 
 
     def enqueueConfiguration(self, ignored, filepath, mask):
