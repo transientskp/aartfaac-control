@@ -14,9 +14,6 @@ class Observation(object):
         self.antenna_set = p.getString("Observation.antennaSet")
         self.sample_clock = p.getInt("Observation.sampleClock")
         self.valid = p.getString("Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed") == "true"
-        self.start_subband = 590/2
-        self.start_freq = self.start_subband*self.sample_clock*1e6/1024.0
-        self.chan_width = self.sample_clock*1e6/(64.0*1024.0)
 
     def save(self, filepath):
       self.parset.writeFile(filepath)
@@ -38,7 +35,7 @@ class Observation(object):
         return self.valid and self.antenna_array == "LBA"
 
     def __str__(self):
-        return "[OBS - %s %0.1fMHz %s-%s] %s" % (self.antenna_set, self.start_freq*1e-6, self.start, self.end, self.filepath)
+        return "[OBS - %s %s-%s] %s" % (self.antenna_set, self.start, self.end, self.filepath)
 
     def __cmp__(self, other):
         return cmp(self.start_time, other.start_time)

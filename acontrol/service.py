@@ -4,6 +4,7 @@ import time, datetime
 import glob
 
 from acontrol.observation import Observation
+from acontrol.configuration import Configuration
 from acontrol.mailnotify import MailNotify
 from acontrol.connection import Connection
 
@@ -19,16 +20,22 @@ from twisted.application.service import Service, MultiService
 FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
-PORT = 45000
-HOSTS = [
-  ("ads001","10.144.6.12", PORT, "0 START --antpos=/usr/local/share/aartfaac/antennasets/lba_outer.dat --freq=54000000 --output=/data/atv --snapshot=/var/www/"),
-  #("ads001","10.144.6.12", PORT, "0 START --buffer-max-size 34359738368 --stream 63 57617187.5 3051.757812 0-62"),
-  #("ais001","10.144.6.13", PORT, "0 START --server-host 10.144.6.12 --monitor-port 4200 --casa /data/pprasad"),
-  ("gpu02", "10.144.6.14", PORT, "0 STARTPIPE -p0 -n288 -t3072 -c64 -d0 -g0,1 -b16 -s8 -R1 -r604800 -i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308 -o tcp:10.144.6.12:5000,tcp:10.144.6.12:4100,null:,null:,null:,null:,null:,null:  2>&1 | tee acontrol.log")
-]
+
+def call_at(start_datetime, f, *args, **kwargs):
+    """
+    Run f(*args, **kwargs) at datetime.
+    """
+    delta = start_datetime - datetime.datetime.now()
+    seconds_ahead = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
+    if seconds_ahead > 0:
+        print "AARTFAAC config update in %d seconds" % (seconds_ahead,)
+        return reactor.callLater(seconds_ahead, f, *args, **kwargs)
+    else:
+        print "Not scheduling; config is in the past"
+    return None
 
 
-def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
+def call_at_to(start_datetime, end_datetime, f, *args, **kwargs):
     """
     Run f(*args, **kwargs) at datetime.
     """
@@ -49,13 +56,15 @@ def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
 
 class Options(usage.Options):
     optParameters = [
-        ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"],
+        ["lofar-dir", None, "/opt/lofar/var/run", "Directory to monitor for lofar parsets"],
+        ["lofar-pattern", None, "MCU001*", "Glob lofar pattern to select usable parsets"],
+        ["config-dir", None, "/opt/aartfaac/var/run", "Directory to monitor for lofar parsets"],
+        ["config-pattern", None, "AARTFAAC*", "Glob aartfaac pattern to select usable parsets"],
         ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
     optFlags = [
-        ["dryrun", "r", "Show commands, don't run them, don't connect to other systems"]
+        ["dryrun", "d", "Show commands, don't run them, don't connect to other systems"]
     ]
 
 
@@ -79,31 +88,54 @@ class WorkerService(Service):
     PRE_TIME   = 20  # Start pipeline N seconds before observation starts
     PRUNE_TIME = 10  # Prune observations that are finished every N seconds
 
+
     def __init__(self, config, email):
-        self.availabile = False
+        self._available = False
         self._parsets = {}
+        self._configs = {}
         self._prune_call = LoopingCall(self.prune)
-        self._fnpattern = config['pattern']
+        self._fnpattern = config['lofar-pattern']
+        self._aapattern = config['config-pattern']
         self._dryrun = config['dryrun']
-        self.email = email
+        self._email = email
+        self._activeconfig = None
+
 
     def startService(self):
-        self.available = True
+        self._available = True
         self._prune_call.start(self.PRUNE_TIME)
+
 
     def stopService(self):
         # Shut down any processing in progress...
-        self.available = False
+        self._available = False
         self._prune_call.stop()
+
 
     def processObservation(self, obs):
         """
         Start a pipeline to process the observation
         """
-        if self.available and obs.is_valid():
-            success = True
+        if self._available and obs.is_valid():
             msg = ""
-            for host in HOSTS:
+            success = True
+
+            if not self._activeconfig:
+                msg += "No aartfaac configuration loaded\n"
+                success = False
+
+            if not self._activeconfig.is_valid():
+                msg += "Invalid aartfaac configuration\n"
+                success = False
+
+            hosts = []
+            if success:
+                # TODO: Implement setstations()
+                #self._activeconfig.setstations(obs)
+                hosts.append(self._activeconfig.atv(obs))
+                hosts.append(self._activeconfig.correlator(obs))
+
+            for host in hosts:
                 c = Connection()
 
                 # Try to connect
@@ -116,7 +148,7 @@ class WorkerService(Service):
                 # First we stop a previous pipeline run, if existing...
                 response = c.send("0 STOP")
                 if response != Connection.OK:
-                    msg += "Host %s got `%s' when trying to stop\n" % (host[0], response)
+                    msg += "Got `%s' when trying to terminate `%s'\n" % (response, host[0])
                     success = False
                     c.close()
                     break
@@ -124,16 +156,16 @@ class WorkerService(Service):
                 # Now we (re) start this process
                 response = c.send(host[3])
                 if response != Connection.OK:
-                    msg += "Host %s got `%s' when trying to start\n" % (host[0], response)
+                    msg += "Got `%s' when trying to execute `%s' with arguments:\n" % (response, host[0])
                     msg += "  " + host[3] + "\n"
                     success = False
                     c.close()
                     break
 
-                msg += "Host `%s' successfully started\n" % (host[0])
+                msg += "Connected to %s:%d\n" % (host[1], host[2])
+                msg += "Executed `%s' successfully with arguments:\n" % (host[0])
                 msg += "  " + host[3] + "\n"
                 c.close()
-
 
             # Next we start the new pipeline run given the observation
             if success:
@@ -143,9 +175,10 @@ class WorkerService(Service):
                 print "Failure when initiating", obs
 
             # Finally we send an email notifying people about the run
-            self.email.send("Observation %s" % (obs), msg, self._dryrun)
+            self._email.send("Observation %s" % (obs), msg, self._dryrun)
         else:
             print "Skipping", obs
+
 
     def enqueueObservation(self, ignored, filepath, mask):
         """
@@ -154,7 +187,7 @@ class WorkerService(Service):
         call = None
         if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
             obs = Observation(filepath.path)
-            call = call_at_time(
+            call = call_at_to(
                 obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
                 obs.end_time,
                 self.processObservation,
@@ -162,18 +195,51 @@ class WorkerService(Service):
             )
 
         if call and filepath.path in self._parsets and self._parsets[filepath.path].active():
-            print "Rescheduling ", filepath.path
+            print "Rescheduling observation", filepath.path
             self._parsets[filepath.path].cancel()
             self._parsets[filepath.path] = call
         elif call and filepath.path not in self._parsets:
-            print "Scheduling ", filepath.path
+            print "Scheduling observation", filepath.path
             self._parsets[filepath.path] = call
         else:
             print "Ignoring ", filepath.path
 
+
+    def applyConfiguration(self, config):
+        """
+        Prepare AARTFAAC telescope for upcomming observations
+        """
+        self._activeconfig = config
+        print "Set AARTFAAC configuration to ", config
+
+
+    def enqueueConfiguration(self, ignored, filepath, mask):
+        """
+        Parse files matching the glob pattern and create future call
+        """
+        call = None
+        if fnmatch.fnmatch(filepath.basename(), self._aapattern):
+            cfg = Configuration(filepath.path)
+            call = call_at(
+                cfg.start_time - datetime.timedelta(seconds=self.PRE_TIME),
+                self.applyConfiguration,
+                cfg
+            )
+
+        if call and filepath.path in self._configs and self._configs[filepath.path].active():
+            print "Rescheduling config update", filepath.path
+            self._configs[filepath.path].cancel()
+            self._configs[filepath.path] = call
+        elif call and filepath.path not in self._configs:
+            print "Scheduling config update", filepath.path
+            self._configs[filepath.path] = call
+        else:
+            print "Ignoring config update", filepath.path
+
+
     def prune(self):
         """
-        Prune parsets/observations that have passed or are inactive
+        Prune parsets/configs that have passed or are inactive
         """
         pruneable = []
         for k, v in self._parsets.iteritems():
@@ -182,6 +248,14 @@ class WorkerService(Service):
         for k in pruneable:
             del self._parsets[k]
         print "Tracking %d observations, pruned %d" % (len(self._parsets), len(pruneable))
+
+        pruneable = []
+        for k, v in self._configs.iteritems():
+            if not v or not v.active():
+                pruneable.append(k)
+        for k in pruneable:
+            del self._configs[k]
+        print "Tracking %d configurations, pruned %d" % (len(self._configs), len(pruneable))
 
 
 def makeService(config):
@@ -193,7 +267,7 @@ def makeService(config):
     worker_service.setServiceParent(acontrol_service)
 
     # Slurp up any existing parsets
-    for file in glob.glob(os.path.join(config['dir'], config['pattern'])):
+    for file in glob.glob(os.path.join(config['lofar-dir'], config['lofar-pattern'])):
         reactor.callWhenRunning(
         worker_service.enqueueObservation,
             None, filepath.FilePath(file), None
@@ -201,12 +275,29 @@ def makeService(config):
 
     # We notify on a file that has been closed in writemode as files are copied
     # over scp, it can take some time for the full file to arrive
-    notifier_service = NotifyService(
-        filepath.FilePath(config['dir']),
+    lofar_parset_service = NotifyService(
+        filepath.FilePath(config['lofar-dir']),
         mask=inotify.IN_CLOSE_WRITE,
         callbacks=[worker_service.enqueueObservation]
     )
-    notifier_service.setName("Notifier")
-    notifier_service.setServiceParent(acontrol_service)
+    lofar_parset_service.setName("LOFAR Notifier")
+    lofar_parset_service.setServiceParent(acontrol_service)
+
+    # Slurp up any existing configs
+    for file in glob.glob(os.path.join(config['config-dir'], config['config-pattern'])):
+        reactor.callWhenRunning(
+        worker_service.enqueueConfiguration,
+            None, filepath.FilePath(file), None
+        )
+
+    # We notify on a file that has been closed in writemode as files are copied
+    # over scp, it can take some time for the full file to arrive
+    aartfaac_config_service = NotifyService(
+        filepath.FilePath(config['config-dir']),
+        mask=inotify.IN_CLOSE_WRITE,
+        callbacks=[worker_service.enqueueConfiguration]
+    )
+    aartfaac_config_service.setName("AARTFAAC Config Notifier")
+    aartfaac_config_service.setServiceParent(acontrol_service)
 
     return acontrol_service

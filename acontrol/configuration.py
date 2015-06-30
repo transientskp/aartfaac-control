@@ -22,6 +22,10 @@ class Configuration(object):
         self.atv_pipeline = eval(self._parser.get("commands", "pipeline"))
 
 
+    def is_valid(self):
+        return True
+
+
     @staticmethod
     def freq2sub(frequency, sample_clock=200e6, nyquist_zone=1):
         """Converts frequency in Hz to lofar subband"""
