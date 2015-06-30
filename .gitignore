@@ -2,5 +2,6 @@
 *swp
 build
 __pycache__
+_trial_temp/
 dropin.cache
 .idea
