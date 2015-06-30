@@ -2,6 +2,9 @@
 AARTFAAC Control System
 =======================
 
+.. image:: https://magnum.travis-ci.com/transientskp/aartfaac-control.svg?token=JM8FL3pgLyGt38ces8j4
+    :target: https://magnum.travis-ci.com/transientskp/aartfaac-control
+
 The control system is a daemon which runs on the LOFAR Main Control Unit
 (MCU). It watches for new parsets which describe upcoming observations and
 extracts relevant details. It maintains a queue of upcoming observations, and,
