@@ -34,7 +34,7 @@ import signal;
 import datetime;
 
 class cmdClient(object):
-	_cmdport = 45000; # Port on which command server should connect.
+	_cmdport = 45000; # Default port on which command server should connect.
 	_knowncmds = ['READY', 'START', 'STOP', 'STATUS', 'QUIT']; # Unused for now.
 
 	def __init__ (self):
@@ -261,6 +261,7 @@ class lcuafaacCmdClient (cmdClient):
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self);
+		self._cmdport = 45001; # Since we want to run atv and pipelines on the same host.
 		self._runcmd = ['atv.py'];
 		# self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
