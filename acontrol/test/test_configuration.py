@@ -73,6 +73,9 @@ class ConfigurationTestCase(TestWithConfig):
     def test_correlator(self):
         cmd = self.config.correlator(self.obs)
 
+    def test_stations(self):
+        cmd = self.config.stations(self.obs)
+
 
 if __name__ == "__main__":
     unittest.main()

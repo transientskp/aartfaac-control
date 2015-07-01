@@ -17,7 +17,7 @@ pipeline = None
 [lba]
 # [(central freq, bandwidth), ...] in Hz
 obs = [(56e6, 1.92e5), (42e6, 3e3)]
-atv = (53e6, 1.92e5)
+atv = (53.90625e6-3e3*32, 1.92e5)
 
 # list of antenna indices to flag
 flag = [2, 4, 9, 188]

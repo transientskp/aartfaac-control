@@ -67,6 +67,19 @@ class Configuration(object):
         return subbands.keys(), subbands.values() 
 
 
+    def stations(self, obs):
+        cmd = "setsubbands.sh "
+
+        if obs.antenna_array.lower() in "lba":
+            img, _ = self.subbands(self.lba_mode)
+            atv, _ = self.subbands([self.lba_atv])
+            cmd += ",".join(map(str, atv + img))
+        else:
+            raise NotImplementedError
+
+        return cmd
+
+
     def atv(self, obs):
         args = self.atv_cmd[4]
 
