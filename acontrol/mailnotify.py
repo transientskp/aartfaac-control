@@ -19,9 +19,7 @@ class MailNotify:
         mailto = filter(self.address, f.read().split('\n'))
         mail['To'] = ', '.join(mailto)
 
-        if dryrun:
-            print mail
-        else:
+        if not dryrun:
             s = smtplib.SMTP()
             s.connect()
             s.sendmail(self.mail_from, mailto, mail.as_string())
