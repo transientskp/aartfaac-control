@@ -149,7 +149,7 @@ class WorkerService(Service):
                     break
 
                 # Now we (re) start this process
-                response = c.send(host[3])
+                response = c.send("0 START " + host[3])
                 if response != Connection.OK:
                     msg += "Got `%s' when trying to execute `%s' with arguments:\n" % (response, host[0])
                     msg += "  " + host[3] + "\n"
