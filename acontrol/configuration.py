@@ -68,19 +68,31 @@ class Configuration(object):
 
 
     def atv(self, obs):
+        ARGS = {"antpos": None, "freq":0.0, "output":"/data/atv", "snapshot":"/var/www", "port":5000}
+
         if obs.antenna_array.lower() in "lba":
-            _, channels = self.subbands([self.lba_atv], obs.sample_clock*1e6)
-            central_frequency = self.lba_atv[0]
-            cmd = self.atv_cmd[3] % (obs.antenna_set, central_frequency, str(channels[0]).replace(" ","")[1:-1])
-            return (self.atv_cmd[0], self.atv_cmd[1], self.atv_cmd[2], cmd)
+            ARGS["antpos"] = "/usr/local/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+            ARGS["freq"] = (self.lba_atv[0])
+            ARGS["port"] = (self.atv_cmd[3])
+            cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in ARGS.iteritems()])
+            return (self.atv_cmd[2], self.atv_cmd[0], self.atv_cmd[1], cmd)
         else:
             raise NotImplementedError
 
 
     def correlator(self, obs):
+        ARGS = {"p":0, "n":288, "t":3072, "c":64, "d":0, "g":"0,1", "b":16, "s":8, "r":0, "i":None, "o":None}
+
         if obs.antenna_array.lower() in "lba":
-            cmd = self.correlator_cmd[3] % (obs.duration)
-            return (self.correlator_cmd[0], self.correlator_cmd[1], self.correlator_cmd[2], cmd)
+            output = [(self.atv_cmd[0], self.atv_cmd[3]), None, None, None, None, None, None, None]
+            ARGS["i"] = "10.99.100.1:53268,10.99.100.1:53276," \
+                        "10.99.100.1:53284,10.99.100.1:53292," \
+                        "10.99.100.1:53300,10.99.100.1:53308"
+            ARGS["o"] = ",".join(["tcp:%s:%i" % (t[0], t[1]) if t else "null:" for t in output])
+            ARGS["r"] = obs.duration
+
+            cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in ARGS.iteritems()])
+            return (self.correlator_cmd[2], self.correlator_cmd[0], self.correlator_cmd[1], cmd)
         else:
             raise NotImplementedError
 
