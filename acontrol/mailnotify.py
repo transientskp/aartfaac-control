@@ -1,41 +1,56 @@
 import smtplib
-from email.MIMEText import MIMEText
+import re
+from os.path import basename
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
 
-FROM = "acontrol@mcu001.control.lofar"
 
 class MailNotify:
-    def __init__(self, mailfile='maillist.txt', mfrom=FROM):
-        self.mail_from = mfrom
-        self.filename = mailfile
+    FROM = "acontrol@mcu001.control.lofar"
+    def __init__(self, mail_file='maillist.txt'):
+        self._mail_file = mail_file
+        self._mail_regex = re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b')
 
-    def send(self, subject, msg, dryrun=False):
+
+    def send(self, subject, body, files=None, server="127.0.0.1", dryrun=False):
         """
-        Sends a standard email with a subject and msg
+        Sends a standard email with a subject, body and potential attachments
         """
-        mail = MIMEText(msg)
-        mail['Subject'] = subject
-        mail['From'] = self.mail_from
-        f = open(self.filename)
-        mailto = filter(self.address, f.read().split('\n'))
-        mail['To'] = ', '.join(mailto)
+        maillist = filter(self.address, open(self._mail_file, 'r').read().split("\n"))
+        msg = MIMEMultipart(
+            From=MailNotify.FROM,
+            To=COMMASPACE.join(maillist),
+            Date=formatdate(localtime=True),
+            Subject=subject
+        )
+        msg.attach(MIMEText(body))
+
+        for f in files or []:
+            with open(f, "rb") as fil:
+                msg.attach(MIMEApplication(
+                    fil.read(),
+                    Content_Disposition='attachment; filename="%s"' % basename(f)
+                ))
 
         if not dryrun:
-            s = smtplib.SMTP()
-            s.connect()
-            s.sendmail(self.mail_from, mailto, mail.as_string())
-            s.close()
+            smtp = smtplib.SMTP(server)
+            smtp.sendmail(send_from, send_to, msg.as_string())
+            smtp.close()
 
 
-    def error(self, msg, dryrun=False):
+    def error(self, msg):
         """
         We hook this method to the twisted log such that we get the error dict
         See http://twistedmatrix.com/documents/11.1.0/core/howto/logging.html#auto4
         """
         if msg['isError']:
           if msg.has_key('failure'):
-            self.send("Processing Error", str(msg), dryrun)
+            self.send("Processing Error", str(msg))
           else:
-            self.send("Processing Error", str(msg), dryrun)
+            self.send("Processing Error", str(msg))
+
 
     def address(self, addr):
-        return len(addr) > 0 and '@' in addr
+        return self._mail_regex.match(addr)

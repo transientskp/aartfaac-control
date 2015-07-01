@@ -16,7 +16,7 @@ class MailNotifyTestCase(unittest.TestCase):
         self.mail_file.close()
 
     def test_mail(self):
-        self.email.send("test", "acontrol unittest", True)
+        self.email.send("test", "acontrol unittest", dryrun=True)
 
 if __name__ == "__main__":
     unittest.main()

@@ -63,10 +63,6 @@ class Options(usage.Options):
         ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
-    optFlags = [
-        ["dryrun", "d", "Show commands, don't run them, don't connect to other systems"]
-    ]
-
 
 class NotifyService(Service):
     """
@@ -96,7 +92,6 @@ class WorkerService(Service):
         self._prune_call = LoopingCall(self.prune)
         self._fnpattern = config['lofar-pattern']
         self._aapattern = config['config-pattern']
-        self._dryrun = config['dryrun']
         self._email = email
         self._activeconfig = None
 
@@ -175,7 +170,7 @@ class WorkerService(Service):
                 print "Failure when initiating", obs
 
             # Finally we send an email notifying people about the run
-            self._email.send("Observation %s" % (obs), msg, self._dryrun)
+            self._email.send("Observation %s" % (obs), msg, [self._activeconfig.filepath, obs.filepath])
         else:
             print "Skipping", obs
 

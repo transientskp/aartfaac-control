@@ -5,15 +5,14 @@ class Observation(object):
     Encapsulates a LOFAR observation.
     """
     def __init__(self, filepath):
-        self.parset = filepath
         self.filepath = filepath
-        p = Parset(self.filepath)
-        self.start_time = p.getDateTime("Observation.startTime")
-        self.end_time = p.getDateTime("Observation.stopTime")
-        self.antenna_array = p.getString("Observation.antennaArray")
-        self.antenna_set = p.getString("Observation.antennaSet")
-        self.sample_clock = p.getInt("Observation.sampleClock")
-        self.valid = p.getString("Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed") == "true"
+        self.parset = Parset(self.filepath)
+        self.start_time = self.parset.getDateTime("Observation.startTime")
+        self.end_time = self.parset.getDateTime("Observation.stopTime")
+        self.antenna_array = self.parset.getString("Observation.antennaArray")
+        self.antenna_set = self.parset.getString("Observation.antennaSet")
+        self.sample_clock = self.parset.getInt("Observation.sampleClock")
+        self.valid = self.parset.getString("Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed") == "true"
 
     def save(self, filepath):
       self.parset.writeFile(filepath)

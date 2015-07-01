@@ -8,7 +8,7 @@ class Configuration(object):
     def __init__(self, filepath):
         self._parser = ConfigParser.RawConfigParser()
         self._parser.read(filepath)
-        self._filepath = filepath
+        self.filepath = filepath
         ts = time.strptime(self._parser.get("general", "starttime"), "%Y-%m-%d %H:%M:%S")
         self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon, ts.tm_mday,
                 ts.tm_hour, ts.tm_min, ts.tm_sec)
