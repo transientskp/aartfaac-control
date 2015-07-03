@@ -170,7 +170,7 @@ class WorkerService(Service):
                 print "Failure when initiating", obs
 
             # Finally we send an email notifying people about the run
-            self._email.send("Observation %s" % (obs), msg, [self._activeconfig.filepath, obs.filepath])
+            self._email.send("%s" % (obs), msg, [self._activeconfig.filepath, obs.filepath])
         else:
             print "Skipping", obs
 
