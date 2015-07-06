@@ -33,14 +33,20 @@ import os;
 import signal;
 import datetime;
 
+DEFAULT_CMDPORT = 45000;
+ATV_CMDPORT = 45001;
 class cmdClient(object):
-	_cmdport = 45000; # Default port on which command server should connect.
 	_knowncmds = ['READY', 'START', 'STOP', 'STATUS', 'QUIT']; # Unused for now.
 
-	def __init__ (self):
+	def __init__ (self, cmdport):
 		self._cmd = 'READY';
 		self._ncmdcalls = 1; # This instance does not repeat the execution of the desired command.
 		self._cmdargs = '';
+		if (cmdport == None):
+			self._cmdport = DEFAULT_CMDPORT;
+		else:
+			self._cmdport = cmdport;
+	
 		print '--> [%s]   Registering signal handler.' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 		signal.signal (signal.SIGINT, self.sighdlr);
 		signal.signal (signal.SIGTERM, self.sighdlr);
@@ -149,7 +155,7 @@ class cmdClient(object):
 				for proc in self._proc:
 					if (proc.poll() == None): # Child  has not terminated
 						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
-						os.killpg (proc.pid, signal.SIGTERM);
+						os.killpg (proc.pid, signal.SIGKILL);
 						proc.wait(); # Prevent zombie processes
 						# proc.kill();
 
@@ -190,7 +196,7 @@ class cmdClient(object):
 # status on whether startup was successful, based on parsing the stdout.
 class pelicanServerCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		self._runcmd = ['start_server.py'];
 		self._ncmdcalls = 1;
 		# self._runcmd = 'watch -n1 date';
@@ -204,7 +210,7 @@ class pelicanServerCmdClient (cmdClient):
 # We reimplement the  genrepeatcmd() function for this.
 class pipelineCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		self._runcmd = ['start_pipeline.py'];
 		# Determine the number of CPUs available 
 		try:
@@ -231,7 +237,7 @@ class pipelineCmdClient (cmdClient):
 	
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		# self._runcmd = 'watch -n1 date';
 		# self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
 		self._ncmdcalls = 1;
@@ -247,7 +253,7 @@ class gpuCorrCmdClient (cmdClient):
 
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		self._runcmd = ['watch -n1 date'];
 
 	def checkRunStatus (self, output):
@@ -260,8 +266,7 @@ class lcuafaacCmdClient (cmdClient):
 
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
-		self._cmdport = 45001; # Since we want to run atv and pipelines on the same host.
+		cmdClient.__init__(self, ATV_CMDPORT);
 		self._runcmd = ['atv.py'];
 		# self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
