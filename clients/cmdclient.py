@@ -245,8 +245,6 @@ class pipelineCmdClient (cmdClient):
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self, DEFAULT_CMDPORT);
-		# self._runcmd = 'watch -n1 date';
-		# self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
 		self._ncmdcalls = 1;
 		self._env["DISPLAY"]=":0";
 		self._env["PLATFORM"]="AMD Accelerated Parallel Processing";
@@ -258,23 +256,21 @@ class gpuCorrCmdClient (cmdClient):
 		return 'OK';
 
 
+# The LCU can be used by acontrol to reload the AARTFAAC firmware images onto the uniboards.
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self, DEFAULT_CMDPORT);
-		self._runcmd = ['watch -n1 date'];
+		# self._runcmd = ['watch -n1 date'];
+		self._runcmd = ['bash /home/acontrol/SVN/Aartfaac/trunk/Software/sh/load_aartfaac_6_images.sh'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
 
-	def genrepeatcmd (self, repid):
-		splitstr = self._recvline.split(' ');
-		self._cmdargs = splitstr[2:len(splitstr)];
-		return;
-
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
 		cmdClient.__init__(self, ATV_CMDPORT);
-		self._runcmd = ['atv.py'];
+		# self._runcmd = ['atv.py']; # Temporary fix as system wide atv cannot be installed by user prasad.
+		self._runcmd = ['/home/prasad/aartfaac-tools/python/rtmon/atv.py'];
 		# self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
 	def checkRunStatus (self, output):
