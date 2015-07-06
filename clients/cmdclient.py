@@ -33,14 +33,20 @@ import os;
 import signal;
 import datetime;
 
+DEFAULT_CMDPORT = 45000;
+ATV_CMDPORT = 45001;
 class cmdClient(object):
-	_cmdport = 45000; # Default port on which command server should connect.
 	_knowncmds = ['READY', 'START', 'STOP', 'STATUS', 'QUIT']; # Unused for now.
 
-	def __init__ (self):
+	def __init__ (self, cmdport):
 		self._cmd = 'READY';
 		self._ncmdcalls = 1; # This instance does not repeat the execution of the desired command.
 		self._cmdargs = '';
+		if (cmdport == None):
+			self._cmdport = DEFAULT_CMDPORT;
+		else:
+			self._cmdport = cmdport;
+	
 		print '--> [%s]   Registering signal handler.' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 		signal.signal (signal.SIGINT, self.sighdlr);
 		signal.signal (signal.SIGTERM, self.sighdlr);
@@ -149,7 +155,7 @@ class cmdClient(object):
 				for proc in self._proc:
 					if (proc.poll() == None): # Child  has not terminated
 						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
-						os.killpg (proc.pid, signal.SIGTERM);
+						os.killpg (proc.pid, signal.SIGKILL);
 						proc.wait(); # Prevent zombie processes
 						# proc.kill();
 
@@ -160,6 +166,13 @@ class cmdClient(object):
 				self._servsock.send(self._status);
 
 			elif self._cmd == 'QUIT':
+				print '<-- [%s]   Sending SIGKILL to all children processes.' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+				for proc in self._proc:
+					if (proc.poll() == None): # Child  has not terminated
+						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
+						os.killpg (proc.pid, signal.SIGKILL);
+						proc.wait(); # Prevent zombie processes
+
 				print '<-- [%s]   Quitting cmdClient.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 				self._status = 'OK';
 				self._servsock.send(self._status);
@@ -190,7 +203,7 @@ class cmdClient(object):
 # status on whether startup was successful, based on parsing the stdout.
 class pelicanServerCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		self._runcmd = ['start_server.py'];
 		self._ncmdcalls = 1;
 		# self._runcmd = 'watch -n1 date';
@@ -204,7 +217,7 @@ class pelicanServerCmdClient (cmdClient):
 # We reimplement the  genrepeatcmd() function for this.
 class pipelineCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		self._runcmd = ['start_pipeline.py'];
 		# Determine the number of CPUs available 
 		try:
@@ -231,9 +244,7 @@ class pipelineCmdClient (cmdClient):
 	
 class gpuCorrCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
-		# self._runcmd = 'watch -n1 date';
-		# self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
 		self._ncmdcalls = 1;
 		self._env["DISPLAY"]=":0";
 		self._env["PLATFORM"]="AMD Accelerated Parallel Processing";
@@ -245,24 +256,21 @@ class gpuCorrCmdClient (cmdClient):
 		return 'OK';
 
 
+# The LCU can be used by acontrol to reload the AARTFAAC firmware images onto the uniboards.
 class lcuafaacCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
-		self._runcmd = ['watch -n1 date'];
+		cmdClient.__init__(self, DEFAULT_CMDPORT);
+		# self._runcmd = ['watch -n1 date'];
+		self._runcmd = ['bash /home/acontrol/SVN/Aartfaac/trunk/Software/sh/load_aartfaac_6_images.sh'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
 
-	def genrepeatcmd (self, repid):
-		splitstr = self._recvline.split(' ');
-		self._cmdargs = splitstr[2:len(splitstr)];
-		return;
-
 class rtmonCmdClient (cmdClient):
 	def __init__ (self):
-		cmdClient.__init__(self);
-		self._cmdport = 45001; # Since we want to run atv and pipelines on the same host.
-		self._runcmd = ['atv.py'];
+		cmdClient.__init__(self, ATV_CMDPORT);
+		# self._runcmd = ['atv.py']; # Temporary fix as system wide atv cannot be installed by user prasad.
+		self._runcmd = ['/home/prasad/aartfaac-tools/python/rtmon/atv.py'];
 		# self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
 	def checkRunStatus (self, output):
