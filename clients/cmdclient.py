@@ -166,6 +166,13 @@ class cmdClient(object):
 				self._servsock.send(self._status);
 
 			elif self._cmd == 'QUIT':
+				print '<-- [%s]   Sending SIGKILL to all children processes.' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+				for proc in self._proc:
+					if (proc.poll() == None): # Child  has not terminated
+						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
+						os.killpg (proc.pid, signal.SIGKILL);
+						proc.wait(); # Prevent zombie processes
+
 				print '<-- [%s]   Quitting cmdClient.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 				self._status = 'OK';
 				self._servsock.send(self._status);
