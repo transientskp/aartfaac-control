@@ -21,10 +21,10 @@ SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 PORT = 45000
 HOSTS = [
-  ("ads001","10.144.6.12", 45001, "0 START --antpos=/usr/local/share/aartfaac/antennasets/lba_outer.dat --freq=54000000 --output=/data/atv --snapshot=/var/www/"),
-  ("ads001","10.144.6.12", PORT, "0 START --buffer-max-size 34359738368 --stream 63 57617187.5 3051.757812 0-62"),
-  ("ais001","10.144.6.13", PORT, "0 START --server-host 10.144.6.12 --monitor-port 4200 --casa /data/pprasad"),
-  ("gpu02", "10.144.6.14", PORT, "0 STARTPIPE -p0 -n288 -t3072 -c64 -d0 -g0,1 -b16 -s8 -R1 -r604800 -i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308 -o tcp:10.144.6.12:5000,tcp:10.144.6.12:4100,null:,null:,null:,null:,null:,null:  2>&1 | tee acontrol.log")
+  ["ads001","10.144.6.12", 45001, "0 START --freq=54000000 --output=/data/atv --snapshot=/var/www/ --calip=10.144.6.13 --calport=4200 --array=lba_outer"],
+  ["ads001","10.144.6.12", PORT, "0 START --buffer-max-size 34359738368 --stream 63 57617187.5 3051.757812 0-62"],
+  ["ais001","10.144.6.13", PORT, "0 START --server-host 10.144.6.12 --monitor-port 4200 --casa /data/pprasad"],
+  ["gpu02", "10.144.6.14", PORT, "0 STARTPIPE -p0 -n288 -t3072 -c64 -d0 -g0,1 -b16 -s8 -R1 -r604800 -i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308 -o tcp:10.144.6.12:5000,tcp:10.144.6.12:4100,null:,null:,null:,null:,null:,null:  2>&1 | tee acontrol.log"]
 ]
 
 
@@ -122,6 +122,7 @@ class WorkerService(Service):
                     break
 
                 # Now we (re) start this process
+                print '<-- Sending command %s to host.' % host[3];
                 response = c.send(host[3])
                 if response != Connection.OK:
                     msg += "Host %s got `%s' when trying to start\n" % (host[0], response)
@@ -154,6 +155,10 @@ class WorkerService(Service):
         call = None
         if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
             obs = Observation(filepath.path)
+
+            # Add array configuration information to atv call
+            oldarrayconf = HOSTS[0][3][HOSTS[0][3].find ('--array'):].split('=')[1];
+            HOSTS[0][3]  = HOSTS[0][3].replace (oldarrayconf, obs.antenna_set);
             call = call_at_time(
                 obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
                 obs.end_time,
