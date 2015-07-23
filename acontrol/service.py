@@ -15,16 +15,20 @@ from twisted.python import filepath
 from twisted.python import usage
 from twisted.python import log
 from twisted.application.service import Service, MultiService
+try:
+	import subprocess;
+except ImportError:
+	print 'Module subprocess not found. Quitting.'
 
 FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 PORT = 45000
 HOSTS = [
-  ["ads001","10.144.6.12", 45001, "0 START --freq=54000000 --output=/data/atv --snapshot=/var/www/ --calip=10.144.6.13 --calport=4200 --array=lba_outer"],
-  ["ads001","10.144.6.12", PORT, "0 START --buffer-max-size 34359738368 --stream 63 57617187.5 3051.757812 0-62"],
-  ["ais001","10.144.6.13", PORT, "0 START --server-host 10.144.6.12 --monitor-port 4200 --casa /data/pprasad"],
-  ["gpu02", "10.144.6.14", PORT, "0 STARTPIPE -p0 -n288 -t3072 -c64 -d0 -g0,1 -b16 -s8 -R1 -r604800 -i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308 -o tcp:10.144.6.12:5000,tcp:10.144.6.12:4100,null:,null:,null:,null:,null:,null:  2>&1 | tee acontrol.log"]
+  ["ads001", "10.144.6.12", 45001, "0 START", "--freq=54000000", "--output=/data/atv", "--snapshot=/var/www/", "--calip=10.144.6.13", "--calport=4200", "--array=lba_outer"],
+  ["ads001", "10.144.6.12", PORT, "0 START", "--buffer-max-size 34359738368", "--stream 63 57617187.5 3051.757812 0-62"],
+  ["ais001", "10.144.6.13", PORT, "0 START", "--server-host 10.144.6.12", "--monitor-port 4200", "--casa /data/pprasad"],
+  ["gpu02",  "10.144.6.14", PORT, "0 STARTPIPE", "-p0", "-n288", "-t3072", "-c64", "-d0", "-g0,1", "-b16", "-s8", "-R1", "-r604800", "-i 10.195.100.1:53268,10.195.100.1:53276,10.195.100.1:53284,10.195.100.1:53292,10.195.100.1:53300,10.195.100.1:53308", "-o tcp:10.144.6.12:5000,tcp:10.144.6.12:4100,null:,null:,null:,null:,null:,null:", "2>&1 | tee acontrol.log"]
 ]
 
 
@@ -101,8 +105,42 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self.available and obs.is_valid():
+            print '<-- System available for valid observation.';
             success = True
             msg = ""
+
+            # Set the subbands on all AARTFAAC stations. Ultimately the subbands
+            # to set will come from the AARTFAAC parset, but currently we 
+            # hardcode them to test out the new runaartfaacrspctl.py script.
+            # subbands = '100,150,200,250,300,350,400,450';
+            subbands = '295,296,297,298,299,300,301,302';
+            stations = ['cs002c', 'cs003c', 'cs004c', 'cs005c', 'cs006c', 'cs007c'];
+            runcmd = ['ssh', '-A', '-o', 'NoHostAuthenticationForLocalhost=yes', 'cs002c', 'python' '/opt/lofar/bin/runaartfaacrspctl.py', '--subbands=%s'%subbands];
+
+            p1 = [];
+            for ind,station in enumerate(stations):
+                # try:
+                runcmd[4] = station;
+                print 'Ind: %d, runcmd: %s' % (ind, runcmd);
+                p1.append(subprocess.Popen (runcmd, stdout=subprocess.PIPE));
+                time.sleep(2);
+                if (p1[ind].returncode != None):
+                    print '### Unable to set subbands on station ', station; 
+                else:
+                    cmdoutput, err = p1[ind].communicate();
+                    print '<-- subband set for %s, output: %s' % (station, cmdoutput);
+                
+            # Add subband information to command strings
+            # Subband 0 goes to atv. Later this can be a separate key in the AARTFAAC parset.
+            atv_subband = subbands.split(',')[0];
+            atv_freq = obs.subband2freq (int(atv_subband));
+            print '<-- Setting atv frequency to 0th subband (%s, %f)' % (atv_subband, atv_freq);
+            HOSTS[0][4] = '--freq=%f'%atv_freq;
+
+            serv_subband = subbands.split(',')[1];
+            serv_freq = obs.subband2freq(int(serv_subband));
+            HOSTS[1][5] = '--stream 63 %f %f 0-62' % (serv_freq, obs.chan_width); 
+                
             for host in HOSTS:
                 c = Connection()
 
@@ -122,8 +160,8 @@ class WorkerService(Service):
                     break
 
                 # Now we (re) start this process
-                print '<-- Sending command %s to host.' % host[3];
-                response = c.send(host[3])
+                print '<-- Sending command %s to host.' % ' '.join(host[3:]);
+                response = c.send(' '.join(host[3:]))
                 if response != Connection.OK:
                     msg += "Host %s got `%s' when trying to start\n" % (host[0], response)
                     msg += "  " + host[3] + "\n"
@@ -132,7 +170,7 @@ class WorkerService(Service):
                     break
 
                 msg += "Host `%s' successfully started\n" % (host[0])
-                msg += "  " + host[3] + "\n"
+                msg += "  " + ' '.join(host[3:]) + "\n"
                 c.close()
 
 
@@ -146,7 +184,7 @@ class WorkerService(Service):
             # Finally we send an email notifying people about the run
             self.email.send("Observation %s" % (obs), msg, self._dryrun)
         else:
-            print "Skipping", obs
+            print "Skipping", obs, 'available: %s,valid obs: %s'% (self.available, obs.is_valid());
 
     def enqueueObservation(self, ignored, filepath, mask):
         """
@@ -157,8 +195,9 @@ class WorkerService(Service):
             obs = Observation(filepath.path)
 
             # Add array configuration information to atv call
-            oldarrayconf = HOSTS[0][3][HOSTS[0][3].find ('--array'):].split('=')[1];
-            HOSTS[0][3]  = HOSTS[0][3].replace (oldarrayconf, obs.antenna_set);
+            # oldarrayconf = HOSTS[0][3][HOSTS[0][3].find ('--array'):].split('=')[1];
+            # HOSTS[0][3]  = HOSTS[0][3].replace (oldarrayconf, obs.antenna_set);
+            HOSTS[0][9] = '--array=%s'%obs.antenna_set;
             call = call_at_time(
                 obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
                 obs.end_time,

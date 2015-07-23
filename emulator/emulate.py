@@ -5,7 +5,7 @@ import random
 import time
 import datetime
 
-TIME_BETWEEN = 60
+TIME_BETWEEN = 30
 TIME_DURATION = 360
 
 sys.path.append(os.path.abspath('acontrol'))
