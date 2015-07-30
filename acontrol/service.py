@@ -54,7 +54,7 @@ def call_at_time(start_datetime, end_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["dir", "d", "/opt/lofar/var/run", "Directory to monitor for parsets"],
-        ["pattern", "p", "MCU001*", "Glob pattern to select usable parsets"],
+        ["pattern", "p", "Observation*", "Glob pattern to select usable parsets"],
         ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
@@ -109,18 +109,13 @@ class WorkerService(Service):
             success = True
             msg = ""
 
-            # Set the subbands on all AARTFAAC stations. Ultimately the subbands
-            # to set will come from the AARTFAAC parset, but currently we 
-            # hardcode them to test out the new runaartfaacrspctl.py script.
-            # subbands = '100,150,200,250,300,350,400,450';
-            subbands = '295,296,297,298,299,300,301,302';
-            stations = ['cs002c', 'cs003c', 'cs004c', 'cs005c', 'cs006c', 'cs007c'];
-            runcmd = ['ssh', '-A', '-o', 'NoHostAuthenticationForLocalhost=yes', 'cs002c', 'python' '/opt/lofar/bin/runaartfaacrspctl.py', '--subbands=%s'%subbands];
+            # runcmd = ['ssh', '-A', '-o', 'NoHostAuthenticationForLocalhost=yes', 'cs002c', '\'python /opt/lofar/bin/runaartfaacrspctl.py --subbands=%s\''%subbands];
+            runcmd = ['ssh', 'cs002c', 'python /opt/lofar/bin/runaartfaacrspctl.py --subbands=%s' %obs.subbands];
 
             p1 = [];
-            for ind,station in enumerate(stations):
+            for ind,station in enumerate(self.aartfaac_stations):
                 # try:
-                runcmd[4] = station;
+                runcmd[1] = station;
                 print 'Ind: %d, runcmd: %s' % (ind, runcmd);
                 p1.append(subprocess.Popen (runcmd, stdout=subprocess.PIPE));
                 time.sleep(2);
@@ -132,12 +127,12 @@ class WorkerService(Service):
                 
             # Add subband information to command strings
             # Subband 0 goes to atv. Later this can be a separate key in the AARTFAAC parset.
-            atv_subband = subbands.split(',')[0];
+            atv_subband = obs.subbands.split(',')[0];
             atv_freq = obs.subband2freq (int(atv_subband));
             print '<-- Setting atv frequency to 0th subband (%s, %f)' % (atv_subband, atv_freq);
             HOSTS[0][4] = '--freq=%f'%atv_freq;
 
-            serv_subband = subbands.split(',')[1];
+            serv_subband = obs.subbands.split(',')[1];
             serv_freq = obs.subband2freq(int(serv_subband));
             HOSTS[1][5] = '--stream 63 %f %f 0-62' % (serv_freq, obs.chan_width); 
                 
