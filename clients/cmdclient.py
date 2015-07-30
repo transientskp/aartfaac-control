@@ -36,10 +36,12 @@ import datetime;
 DEFAULT_CMDPORT = 45000;
 ATV_CMDPORT = 45001;
 class cmdClient(object):
-	_knowncmds = ['READY', 'START', 'STOP', 'STATUS', 'QUIT']; # Unused for now.
+	_knowncmds   = ['START', 'STOP', 'STATUS', 'QUIT']; # Unused for now.
+	_knownstates = ['READY', 'SERVING'];
 
 	def __init__ (self, cmdport):
-		self._cmd = 'READY';
+		self._cmd = 'STOP';
+		self._state = 'READY';
 		self._ncmdcalls = 1; # This instance does not repeat the execution of the desired command.
 		self._cmdargs = '';
 		if (cmdport == None):
@@ -58,6 +60,7 @@ class cmdClient(object):
 		self._proc = [];
 		self._pipe = [];
 		self._threadid = [];   # Will be used to store threadid of command to be run.
+		self._threadrunning = 0; # Indicates a thread has already been spawned for servicing commands.
 		self._env = os.environ.copy();
 
 	def run (self):
@@ -67,8 +70,15 @@ class cmdClient(object):
 			for s in readable:
 				if s is self._fid:
 					self._servsock, self._servaddr = self._fid.accept();
-					print '--> [%s]    Received connection from: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),self._servaddr);
-					thread.start_new_thread (self.threadhdlr,());
+					print '--> [%s]   Received connection from: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),self._servaddr);
+					if (self._threadrunning == 0):
+						print '<-- Starting new thread to service commands.';
+						thread.start_new_thread (self.threadhdlr,());
+						self._threadrunning = 1;
+						self._state = 'SERVING';
+					else:
+						print '<-- Allowing existing thread to handle requests.';
+						
 
 	def genrepeatcmd (self, repid):
 		splitstr = self._recvline.split(' ');
@@ -85,22 +95,41 @@ class cmdClient(object):
 	# Thread to service incoming commands.
 	def threadhdlr (self):
 
-		while (self._cmd.strip() != 'QUIT'):
+		while (self._state != 'READY'):
 			# NOTE: Had to strip whitespaces, for some reason received commands have 
 			# a couple of extra whitespaces at the end. 
 			self._recvline = str(self._servsock.recv (1024)).strip();
 			print '--> [%s]   Received: %s, len: %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._recvline, len(self._recvline));
-	
+		
 			self._status = 'NOK';
 			splitstr = self._recvline.split(' ');
 			self._cmdproto = splitstr[0];
+			if (len(self._recvline) == 0):
+				print '### 0-length packet received! Ignoring this request...';
+				# self._state = 'READY';
+				# self._threadrunning = 0;
+				# self._servsock.close();
+				# print '...Done';
+				continue;
+	
 			if (self._cmdproto != '0'):
 				print '### Invalid command protocol! Try again.';
-				self._servsock.send(self._status);
+				try:
+					self._servsock.send(self._status);
+				except:
+					print '### Error in send().';
+	
 				continue;
 				
 			self._cmd = splitstr[1].strip();
 			print 'cmd: ', self._cmd;
+	
+			if self._cmd == 'STATUS':
+				try:
+					self._servsock.send(self._state);
+					self._servsock.send(self._status);
+				except:
+					print '### Error in send().';
 
 			if self._cmd == 'START':
 				self._cmdargs = splitstr[2:len(splitstr)];
@@ -117,17 +146,24 @@ class cmdClient(object):
 						self._threadid.append(thread.get_ident()); 
 						self._status = 'OK';
 						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._status);
-						self._servsock.send(self._status);
 						# self._proc[ind].wait();
 						
 					except subprocess.CalledProcessError:
 						print '### [%s]   Error in executing process!' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 						self._status = 'NOK';
-						self._servsock.send(self._status);
+						try:
+							self._servsock.send(self._status);
+						except:
+							print '### Error in send().';
 	
+	
+				# Send a single status for the full set of executed commands, as the other side expects only a 
+				# single response.
+				self._servsock.send(self._status);
+		
 				# self._status = self.checkRunStatus(cmdout);
 				
-	
+		
 			elif self._cmd == 'STARTPIPE':
 				self._cmdargs = self._recvline.split('|')[0].strip().split(' ');
 				self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
@@ -143,13 +179,22 @@ class cmdClient(object):
 						self._threadid.append(thread.get_ident()); 
 						self._status = 'OK';
 						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._status);
-						self._servsock.send(self._status);
-						# self._proc[ind].wait();
 					except subprocess.CalledProcessError:
 						print '### [%s]   Error in executing process!' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 						self._status = 'NOK';
-						self._servsock.send(self._status);
-
+						try:
+							self._servsock.send(self._status);
+						except:
+							print '### Error in send().';
+	
+				# Send a single status for the full set of executed commands, as the other side expects only a 
+				# single response.
+				try:
+					self._servsock.send(self._status);
+				except:
+					print '### Error in sending ack. packet back!';
+				
+	
 				
 			elif self._cmd == 'STOP':
 				for proc in self._proc:
@@ -158,13 +203,16 @@ class cmdClient(object):
 						os.killpg (proc.pid, signal.SIGKILL);
 						proc.wait(); # Prevent zombie processes
 						# proc.kill();
-
+	
 				for ind in range (0, len(self._proc)):
 					self._proc.pop();
 					
 				self._status = 'OK';
-				self._servsock.send(self._status);
-
+				try:
+					self._servsock.send(self._status);
+				except:
+					print '### Error in sending ack. packet back!';
+	
 			elif self._cmd == 'QUIT':
 				print '<-- [%s]   Sending SIGKILL to all children processes.' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 				for proc in self._proc:
@@ -172,11 +220,15 @@ class cmdClient(object):
 						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
 						os.killpg (proc.pid, signal.SIGKILL);
 						proc.wait(); # Prevent zombie processes
-
+	
 				print '<-- [%s]   Quitting cmdClient.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 				self._status = 'OK';
-				self._servsock.send(self._status);
-
+				try:
+					self._servsock.send(self._status);
+				except:
+					print '### Error in sending ack. packet back!';
+						
+	
 			else:
 				print '### [%s]   Cmd %s not understood. Try again.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmd);
 				self._status = 'NOK';
