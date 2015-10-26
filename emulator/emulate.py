@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath('acontrol'))
 from parset import Parset
 
 if __name__ == "__main__":
-  p = Parset('data/MCU001:ObservationControl[0]{259133}')
+  p = Parset('data/lofar/MCU001:ObservationControl[0]{259133}')
   starttime = datetime.datetime.now()
 
   i = 0
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     p.replace('Observation.startTime', starttime.strftime("%Y-%m-%d %H:%M:%S"))
     p.replace('Observation.endTime', endtime.strftime("%Y-%m-%d %H:%M:%S"))
-    p.writeFile('data/%s' % (filename))
+    p.writeFile('data/lofar/%s' % (filename))
 
     i += 1
     seconds = (endtime - datetime.datetime.now()).seconds + 2
