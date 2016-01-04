@@ -114,8 +114,8 @@ class cmdClient(object):
 						self._servsock.send(self._status);
 						# self._proc[ind].wait();
 						
-					except subprocess.CalledProcessError:
-						print '### [%s]   Error in executing process!' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+					except (subprocess.CalledProcessError,OSError) as err:
+						print '### [%s]   Error in executing process! [%s]' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(err));
 						self._status = 'NOK';
 						self._servsock.send(self._status);
 	
