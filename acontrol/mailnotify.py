@@ -1,12 +1,18 @@
 import smtplib
 import re
 from os.path import basename
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import COMMASPACE, formatdate
+import mimetypes
+
+from email import Encoders
+from email.Message import Message
+from email.MIMEAudio import MIMEAudio
+from email.MIMEBase import MIMEBase
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEImage import MIMEImage
+from email.MIMEText import MIMEText
 
 
+COMMASPACE = ', '
 class MailNotify:
     FROM = "acontrol@mcu001.control.lofar"
     def __init__(self, mail_file='maillist.txt'):
@@ -22,21 +28,21 @@ class MailNotify:
         msg = MIMEMultipart(
             From=MailNotify.FROM,
             To=COMMASPACE.join(maillist),
-            Date=formatdate(localtime=True),
             Subject=subject
         )
         msg.attach(MIMEText(body))
 
         for f in files or []:
-            with open(f, "rb") as fil:
-                msg.attach(MIMEApplication(
-                    fil.read(),
-                    Content_Disposition='attachment; filename="%s"' % basename(f)
-                ))
+            fil = open(f, "rb")
+            msg.attach(MIMEApplication(
+                fil.read(),
+                Content_Disposition='attachment; filename="%s"' % basename(f)
+            ))
+            close(fil)
 
         if not dryrun:
             smtp = smtplib.SMTP(server)
-            smtp.sendmail(send_from, send_to, msg.as_string())
+            smtp.sendmail(MailNotify.FROM, maillist, msg.as_string())
             smtp.close()
 
 

@@ -261,23 +261,6 @@ def makeService(config):
     worker_service.setName("Worker")
     worker_service.setServiceParent(acontrol_service)
 
-    # Slurp up any existing parsets
-    for file in glob.glob(os.path.join(config['lofar-dir'], config['lofar-pattern'])):
-        reactor.callWhenRunning(
-        worker_service.enqueueObservation,
-            None, filepath.FilePath(file), None
-        )
-
-    # We notify on a file that has been closed in writemode as files are copied
-    # over scp, it can take some time for the full file to arrive
-    lofar_parset_service = NotifyService(
-        filepath.FilePath(config['lofar-dir']),
-        mask=inotify.IN_CLOSE_WRITE,
-        callbacks=[worker_service.enqueueObservation]
-    )
-    lofar_parset_service.setName("LOFAR Notifier")
-    lofar_parset_service.setServiceParent(acontrol_service)
-
     # Slurp up any existing configs
     for file in glob.glob(os.path.join(config['config-dir'], config['config-pattern'])):
         reactor.callWhenRunning(
@@ -294,5 +277,22 @@ def makeService(config):
     )
     aartfaac_config_service.setName("AARTFAAC Config Notifier")
     aartfaac_config_service.setServiceParent(acontrol_service)
+
+    # Slurp up any existing parsets
+    for file in glob.glob(os.path.join(config['lofar-dir'], config['lofar-pattern'])):
+        reactor.callWhenRunning(
+        worker_service.enqueueObservation,
+            None, filepath.FilePath(file), None
+        )
+
+    # We notify on a file that has been closed in writemode as files are copied
+    # over scp, it can take some time for the full file to arrive
+    lofar_parset_service = NotifyService(
+        filepath.FilePath(config['lofar-dir']),
+        mask=inotify.IN_CLOSE_WRITE,
+        callbacks=[worker_service.enqueueObservation]
+    )
+    lofar_parset_service.setName("LOFAR Notifier")
+    lofar_parset_service.setServiceParent(acontrol_service)
 
     return acontrol_service
