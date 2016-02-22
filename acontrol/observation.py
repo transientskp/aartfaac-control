@@ -61,11 +61,12 @@ class Observation(object):
     # Returns true if ALL aartfaac-6 stations were found in the observation
     @property
     def is_aartfaac (self):
-        return set(self.aartfaac_stations).issubset (self.stations);
+        # Ignore the last character in the station list, which is the 'c' in 'cs002c'.
+        return set([stat[:-1].upper() for stat in self.aartfaac_stations]).issubset (self.stations);
 
     def is_valid(self):
         print '<-- Observation antennaset = %s, duration = %dsec, is_aartfaac = %s.' % (self.antenna_set, self.duration, self.is_aartfaac);
-        return self.valid and self.is_aartfaac and set(self.antenna_set).issubset(self.aartfaac_arrayconfig) and (self.duration > 600);
+        return self.valid and self.is_aartfaac and set([self.antenna_set]).issubset(self.aartfaac_arrayconfigs) and (self.duration > 600);
 
     def __str__(self):
         return "[OBS - %s %0.1fMHz %s-%s] %s" % (self.antenna_set, self.start_freq*1e-6, self.start, self.end, self.filepath)

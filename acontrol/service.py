@@ -113,7 +113,7 @@ class WorkerService(Service):
             runcmd = ['ssh', 'cs002c', 'python /opt/lofar/bin/runaartfaacrspctl.py --subbands=%s' %obs.subbands];
 
             p1 = [];
-            for ind,station in enumerate(self.aartfaac_stations):
+            for ind,station in enumerate(obs.aartfaac_stations):
                 # try:
                 runcmd[1] = station;
                 print 'Ind: %d, runcmd: %s' % (ind, runcmd);
