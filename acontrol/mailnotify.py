@@ -17,7 +17,7 @@ class MailNotify:
     FROM = "acontrol@mcu001.control.lofar"
     def __init__(self, mail_file='maillist.txt'):
         self._mail_file = mail_file
-        self._mail_regex = re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b')
+        self._mail_regex = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
     def send(self, subject, body, files=None, server="127.0.0.1", dryrun=False):
