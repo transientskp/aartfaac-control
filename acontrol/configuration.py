@@ -19,6 +19,7 @@ class Configuration(object):
         self.tracklist = eval(self._parser.get("general", "tracklist"))
         self.atv_cmd = eval(self._parser.get("commands", "atv"))
         self.correlator_cmd = eval(self._parser.get("commands", "correlator"))
+        self.corsim_cmd = eval(self._parser.get("commands", "correlator"))
         self.atv_server = eval(self._parser.get("commands", "server"))
         self.atv_pipeline = eval(self._parser.get("commands", "pipeline"))
 
@@ -99,9 +100,6 @@ class Configuration(object):
 
         if obs.antenna_array.lower() in "lba":
             output = [(self.atv_cmd[0], self.atv_cmd[3]), None, None, None, None, None, None, None]
-            args["i"] = "10.99.100.1:53268,10.99.100.1:53276," \
-                        "10.99.100.1:53284,10.99.100.1:53292," \
-                        "10.99.100.1:53300,10.99.100.1:53308"
             args["o"] = ",".join(["tcp:%s:%i" % (t[0], t[1]) if t else "null:" for t in output])
             args["r"] = obs.duration
 
@@ -111,7 +109,14 @@ class Configuration(object):
         cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
         return (self.correlator_cmd[2], self.correlator_cmd[0], self.correlator_cmd[1], cmd)
 
+    
+    def server(self, obs):
+        args = self.server_cmd[4]
 
+    def pipelines(self, obs):
+        args = self.pipeline_cmd[4]
+
+    
     def __str__(self):
         return "[CFG - %s] %s" % (self.start_time, self._filepath)
 

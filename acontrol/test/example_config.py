@@ -10,7 +10,7 @@ tracklist = [("CasA", "23:23:26", "58:48:00"), ("Jupiter", None, None), ("Sun", 
 [commands]
 # (ip, cmdcli port, program name, program port, cli args)
 atv = ("10.144.6.12", 45000, "tv", 5000, {"antpos": None, "freq":0.0, "output":"/data/atv", "snapshot":"/var/www", "port":5000})
-correlator = ("10.144.6.14", 46000, "correlator", 6000, {"p":0, "n":288, "t":3072, "c":64, "d":0, "g":"0,1", "b":16, "s":8, "r":0, "i":None, "o":None})
+correlator = ("10.144.6.31", 46000, "correlator", 6000, {"p":1, "n":288, "t":768, "c":256, "C":63, "m":9, "d":0, "g":"0-9", "b":16, "s":8, "r":0, "N":"4-11,28-35/16-23,40-47", "A":"0:6", "O":"0:4,1:4", "i":"10.195.100.3:53268,10.195.100.3:53276,10.195.100.3:53284,10.195.100.3:53292,10.195.100.3:53300,10.195.100.3:53308", "o":None})
 server = None
 pipeline = None
 
@@ -20,7 +20,7 @@ obs = [(56e6, 1.92e5), (42e6, 3e3)]
 atv = (53.90625e6-3e3*32, 1.92e5)
 
 # list of antenna indices to flag
-flag = [2, 4, 9, 188]
+# flag = [2, 4, 9, 188]
 
 [hba]
 # [(central freq, bandwidth, (ra, dec)), ...] in Hz
