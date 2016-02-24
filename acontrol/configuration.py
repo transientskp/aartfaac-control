@@ -119,7 +119,7 @@ class Configuration(object):
 
     
     def __str__(self):
-        return "[CFG - %s] %s" % (self.start_time, self._filepath)
+        return "[CFG - %s] %s" % (self.start_time, self.filepath)
 
 
     def __cmp__(self, other):
