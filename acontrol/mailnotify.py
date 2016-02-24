@@ -34,11 +34,12 @@ class MailNotify:
 
         for f in files or []:
             fil = open(f, "rb")
-            msg.attach(MIMEApplication(
-                fil.read(),
-                Content_Disposition='attachment; filename="%s"' % basename(f)
-            ))
-            close(fil)
+            part = MIMEBase('application', "octed-stream")
+            part.set_payload(fil.read())
+            Encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment; filename="%s"' % basename(f))
+            msg.attach(part)
+            fil.close()
 
         if not dryrun:
             smtp = smtplib.SMTP(server)
