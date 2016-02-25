@@ -1,5 +1,7 @@
 import smtplib
 import re
+import StringIO
+import zipfile
 from os.path import basename
 import mimetypes
 
@@ -32,14 +34,21 @@ class MailNotify:
         )
         msg.attach(MIMEText(body))
 
-        for f in files or []:
-            fil = open(f, "rb")
+        if files:
+            zipped = StringIO.StringIO()
+            zf = zipfile.ZipFile(zipped, 'a', zipfile.ZIP_DEFLATED)
+            
+            for filename in files:
+                zf.writestr(filename, open(filename, "rb").read())
+
             part = MIMEBase('application', "octed-stream")
-            part.set_payload(fil.read())
+            zipped.seek(0)
+            part.set_payload(zipped.read())
             Encoders.encode_base64(part)
-            part.add_header('Content-Disposition', 'attachment; filename="%s"' % basename(f))
+            part.add_header('Content-Disposition', 'attachment; filename="parsets.zip"')
             msg.attach(part)
-            fil.close()
+            zf.close()
+            zipped.close()
 
         if not dryrun:
             smtp = smtplib.SMTP(server)
