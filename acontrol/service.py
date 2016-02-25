@@ -171,7 +171,10 @@ class WorkerService(Service):
                 print "Reason: \n\n",msg,"\n\n"
 
             # Finally we send an email notifying people about the run
-            self._email.send("%s" % (obs), msg, [self._activeconfig.filepath, obs.filepath])
+            filenames = [obs.filepath]
+            if self._activeconfig:
+                filenames.append(self._activeconfig.filepath)
+            self._email.send("%s" % (obs), msg, filenames)
         else:
             print "Skipping", obs
 
