@@ -39,11 +39,13 @@ class MailNotify:
             zf = zipfile.ZipFile(zipped, 'a', zipfile.ZIP_DEFLATED)
             
             for filename in files:
-                zf.writestr(filename, open(filename, "rb").read())
+                f = open(filename, 'r')
+                zf.writestr(filename, f.read())
+                f.close()
 
             part = MIMEBase('application', "octed-stream")
             zipped.seek(0)
-            part.set_payload(zipped.read())
+            part.set_payload(zipped.getvalue())
             Encoders.encode_base64(part)
             part.add_header('Content-Disposition', 'attachment; filename="parsets.zip"')
             msg.attach(part)
