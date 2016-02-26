@@ -2,11 +2,13 @@ import os
 import fnmatch
 import time, datetime
 import glob
+import tempfile
 
 from acontrol.observation import Observation
 from acontrol.configuration import Configuration
 from acontrol.mailnotify import MailNotify
 from acontrol.connection import Connection
+from acontrol.test.example_config import EXAMPLE_CONFIG
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -93,7 +95,11 @@ class WorkerService(Service):
         self._fnpattern = config['lofar-pattern']
         self._aapattern = config['config-pattern']
         self._email = email
-        self._activeconfig = None
+        cfg_file = tempfile.NamedTemporaryFile(mode='w')
+        cfg_file.write(EXAMPLE_CONFIG)
+        cfg_file.seek(0)
+        self._activeconfig = Configuration(cfg_file.name)
+        cfg_file.close()
 
 
     def startService(self):
