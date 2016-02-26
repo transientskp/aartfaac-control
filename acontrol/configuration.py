@@ -85,7 +85,7 @@ class Configuration(object):
         args = self.atv_cmd[4]
 
         if obs.antenna_array.lower() in "lba":
-            args["antpos"] = "/usr/local/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+            args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
             args["freq"] = (self.lba_atv[0])
             args["port"] = (self.atv_cmd[3])
         else:

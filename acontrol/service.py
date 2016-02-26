@@ -95,11 +95,10 @@ class WorkerService(Service):
         self._fnpattern = config['lofar-pattern']
         self._aapattern = config['config-pattern']
         self._email = email
-        cfg_file = tempfile.NamedTemporaryFile(mode='w')
-        cfg_file.write(EXAMPLE_CONFIG)
-        cfg_file.seek(0)
-        self._activeconfig = Configuration(cfg_file.name)
-        cfg_file.close()
+        self._cfg_file = tempfile.NamedTemporaryFile(mode='w')
+        self._cfg_file.write(EXAMPLE_CONFIG)
+        self._cfg_file.seek(0)
+        self._activeconfig = Configuration(self._cfg_file.name)
 
 
     def startService(self):
@@ -111,6 +110,7 @@ class WorkerService(Service):
         # Shut down any processing in progress...
         self._available = False
         self._prune_call.stop()
+        self._cfg_file.close()
 
 
     def processObservation(self, obs):
