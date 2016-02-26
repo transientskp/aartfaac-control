@@ -168,13 +168,13 @@ class WorkerService(Service):
                 print "Starting", obs
             else:
                 print "Failure when initiating", obs
-                print "Reason: \n\n",msg,"\n\n"
+                print "Log:\n\n\n",msg,"\n\n"
 
             # Finally we send an email notifying people about the run
             filenames = [obs.filepath]
             if self._activeconfig:
                 filenames.append(self._activeconfig.filepath)
-            self._email.send("%s" % (obs), msg, filenames)
+            self._email.send("%s" % (str(obs)), msg, filenames)
         else:
             print "Skipping", obs
 

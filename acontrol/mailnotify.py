@@ -27,29 +27,27 @@ class MailNotify:
         Sends a standard email with a subject, body and potential attachments
         """
         maillist = filter(self.address, open(self._mail_file, 'r').read().split("\n"))
-        msg = MIMEMultipart(
-            From=MailNotify.FROM,
-            To=COMMASPACE.join(maillist),
-            Subject=subject
-        )
+        msg = MIMEMultipart()
+        msg['From']=MailNotify.FROM
+        msg['To']=COMMASPACE.join(maillist)
+        msg['Subject']=subject
         msg.attach(MIMEText(body))
 
         if files:
             zipped = StringIO.StringIO()
-            zf = zipfile.ZipFile(zipped, 'a', zipfile.ZIP_DEFLATED)
+            zf = zipfile.ZipFile(zipped, 'w', zipfile.ZIP_DEFLATED)
             
             for filename in files:
                 f = open(filename, 'r')
-                zf.writestr(filename, f.read())
+                zf.writestr(basename(filename), f.read())
                 f.close()
 
             part = MIMEBase('application', "octed-stream")
-            zipped.seek(0)
+            zf.close()
             part.set_payload(zipped.getvalue())
             Encoders.encode_base64(part)
             part.add_header('Content-Disposition', 'attachment; filename="parsets.zip"')
             msg.attach(part)
-            zf.close()
             zipped.close()
 
         if not dryrun:
