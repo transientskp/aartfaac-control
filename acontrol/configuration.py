@@ -1,5 +1,6 @@
 import ConfigParser
 import time, datetime
+import copy
 
 class Configuration(object):
     """
@@ -82,7 +83,7 @@ class Configuration(object):
 
 
     def atv(self, obs):
-        args = self.atv_cmd[4]
+        args = copy.deepcopy(self.atv_cmd[4])
 
         if obs.antenna_array.lower() in "lba":
             args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
