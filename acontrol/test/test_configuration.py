@@ -64,12 +64,27 @@ class ConfigurationTestCase(TestWithConfig):
 
     def test_atv(self):
         cmd = self.config.atv(self.obs)
+        print "\n\n\n",cmd,"\n\n"
+
 
     def test_correlator(self):
         cmd = self.config.correlator(self.obs)
+        print "\n\n\n",cmd,"\n\n"
+
 
     def test_stations(self):
         cmd = self.config.stations(self.obs)
+        print "\n\n\n",cmd,"\n\n"
+
+
+    def test_server(self):
+        cmd = self.config.server(self.obs)
+        print "\n\n\n",cmd,"\n\n"
+
+
+    def test_pipeline(self):
+        cmd = self.config.pipelines(self.obs)
+        print "\n\n\n",cmd,"\n\n"
 
 
 if __name__ == "__main__":
