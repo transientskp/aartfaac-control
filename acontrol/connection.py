@@ -30,6 +30,8 @@ class Connection:
             self.sock.settimeout(None)
         except IOError:
             return Connection.NOK
+        except socket.error:
+            return Connection.NOK
 
         return str(response)
 

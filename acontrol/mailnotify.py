@@ -1,5 +1,7 @@
 import smtplib
 import re
+import StringIO
+import zipfile
 from os.path import basename
 import mimetypes
 
@@ -17,7 +19,7 @@ class MailNotify:
     FROM = "acontrol@mcu001.control.lofar"
     def __init__(self, mail_file='maillist.txt'):
         self._mail_file = mail_file
-        self._mail_regex = re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b')
+        self._mail_regex = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
     def send(self, subject, body, files=None, server="127.0.0.1", dryrun=False):
@@ -25,20 +27,28 @@ class MailNotify:
         Sends a standard email with a subject, body and potential attachments
         """
         maillist = filter(self.address, open(self._mail_file, 'r').read().split("\n"))
-        msg = MIMEMultipart(
-            From=MailNotify.FROM,
-            To=COMMASPACE.join(maillist),
-            Subject=subject
-        )
+        msg = MIMEMultipart()
+        msg['From']=MailNotify.FROM
+        msg['To']=COMMASPACE.join(maillist)
+        msg['Subject']=subject
         msg.attach(MIMEText(body))
 
-        for f in files or []:
-            fil = open(f, "rb")
-            msg.attach(MIMEApplication(
-                fil.read(),
-                Content_Disposition='attachment; filename="%s"' % basename(f)
-            ))
-            close(fil)
+        if files:
+            zipped = StringIO.StringIO()
+            zf = zipfile.ZipFile(zipped, 'w', zipfile.ZIP_DEFLATED)
+            
+            for filename in files:
+                f = open(filename, 'r')
+                zf.writestr(basename(filename), f.read())
+                f.close()
+
+            part = MIMEBase('application', "octed-stream")
+            zf.close()
+            part.set_payload(zipped.getvalue())
+            Encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment; filename="parsets.zip"')
+            msg.attach(part)
+            zipped.close()
 
         if not dryrun:
             smtp = smtplib.SMTP(server)

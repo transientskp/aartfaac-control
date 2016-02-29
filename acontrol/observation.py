@@ -34,7 +34,7 @@ class Observation(object):
         return self.valid and self.antenna_array == "LBA"
 
     def __str__(self):
-        return "OBS - %s %s-%s" % (self.antenna_set, self.start, self.end)
+        return "OBS - %s (%s)" % (self.antenna_set, (self.end_time-self.start_time))
 
     def __cmp__(self, other):
         return cmp(self.start_time, other.start_time)

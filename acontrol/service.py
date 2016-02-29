@@ -2,11 +2,13 @@ import os
 import fnmatch
 import time, datetime
 import glob
+import tempfile
 
 from acontrol.observation import Observation
 from acontrol.configuration import Configuration
 from acontrol.mailnotify import MailNotify
 from acontrol.connection import Connection
+from acontrol.test.example_config import EXAMPLE_CONFIG
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -93,7 +95,10 @@ class WorkerService(Service):
         self._fnpattern = config['lofar-pattern']
         self._aapattern = config['config-pattern']
         self._email = email
-        self._activeconfig = None
+        self._cfg_file = tempfile.NamedTemporaryFile(mode='w')
+        self._cfg_file.write(EXAMPLE_CONFIG)
+        self._cfg_file.seek(0)
+        self._activeconfig = Configuration(self._cfg_file.name)
 
 
     def startService(self):
@@ -105,6 +110,7 @@ class WorkerService(Service):
         # Shut down any processing in progress...
         self._available = False
         self._prune_call.stop()
+        self._cfg_file.close()
 
 
     def processObservation(self, obs):
@@ -124,7 +130,7 @@ class WorkerService(Service):
 
             hosts = []
             if success:
-                msg += "Using aartfaac configuration `%s'\n" % (self._activeconfig._filepath)
+                msg += "Using aartfaac configuration `%s'\n" % (self._activeconfig.filepath)
                 # TODO: Implement setstations()
                 #self._activeconfig.setstations(obs)
                 hosts.append(self._activeconfig.atv(obs))
@@ -163,14 +169,20 @@ class WorkerService(Service):
                 c.close()
 
             # Next we start the new pipeline run given the observation
+            subject = "[-] %s" % (obs)
             if success:
                 msg += "All processes started successfully\n"
+                subject = "[+] %s" % (obs)
                 print "Starting", obs
             else:
                 print "Failure when initiating", obs
+                print "Log:\n\n\n",msg,"\n\n"
 
             # Finally we send an email notifying people about the run
-            self._email.send("%s" % (obs), msg, [self._activeconfig.filepath, obs.filepath])
+            filenames = [obs.filepath]
+            if self._activeconfig:
+                filenames.append(self._activeconfig.filepath)
+            self._email.send(subject, msg, filenames)
         else:
             print "Skipping", obs
 

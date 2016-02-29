@@ -1,5 +1,6 @@
 import ConfigParser
 import time, datetime
+import copy
 
 class Configuration(object):
     """
@@ -82,10 +83,10 @@ class Configuration(object):
 
 
     def atv(self, obs):
-        args = self.atv_cmd[4]
+        args = copy.deepcopy(self.atv_cmd[4])
 
         if obs.antenna_array.lower() in "lba":
-            args["antpos"] = "/usr/local/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+            args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
             args["freq"] = (self.lba_atv[0])
             args["port"] = (self.atv_cmd[3])
         else:
@@ -119,7 +120,7 @@ class Configuration(object):
 
     
     def __str__(self):
-        return "[CFG - %s] %s" % (self.start_time, self._filepath)
+        return "[CFG - %s] %s" % (self.start_time, self.filepath)
 
 
     def __cmp__(self, other):
