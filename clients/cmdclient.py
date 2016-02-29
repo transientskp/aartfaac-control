@@ -35,44 +35,62 @@ import datetime;
 
 class cmdClient(object):
 	_cmdport = 45000; # Port on which command server should connect.
-	_knowncmds = ['READY', 'START', 'STOP', 'STATUS', 'QUIT']; # Unused for now.
+	# knowncmds Unused for now.
+	_knowncmds = ['READY', 'START', 'STOP', 'STATUS', 'QUIT']; 
 
-	def __init__ (self):
+	def __init__ (self, cmdport):
 		self._cmd = 'READY';
-		self._ncmdcalls = 1; # This instance does not repeat the execution of the desired command.
+		self._cmdport = cmdport;
+		# Allow repetition of execution of the desired command.
+		self._ncmdcalls = 1; 
 		self._cmdargs = '';
-		print '--> [%s]   Registering signal handler.' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+		print '--> [%s]   Registering signal handler.' \
+		% datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+
 		signal.signal (signal.SIGINT, self.sighdlr);
 		signal.signal (signal.SIGTERM, self.sighdlr);
 		self._fid = socket.socket (socket.AF_INET, socket.SOCK_STREAM);
 		self._fid.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1);
-		print '--> [%s]   Binding on port %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdport);
+		print '--> [%s]   Binding on port %d.' \
+		% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), \
+
+		self._cmdport);
 		self._fid.bind( ('', self._cmdport) );
 		self._runcmd = ['date']; # Default command for the baseclass.
 		self._proc = [];
 		self._pipe = [];
-		self._threadid = [];   # Will be used to store threadid of command to be run.
+
+		# Will be used to store threadid of command to be run.
+		self._threadid = [];   
 		self._env = os.environ.copy();
 
 	def run (self):
 		self._fid.listen(1); # Blocking wait
+
 		while (self._cmd.strip() != 'QUIT'): 
-			readable, writable, inerror = select.select ([self._fid], [], [], 1);
+			readable, writable, inerror = \
+				select.select ([self._fid], [], [], 1);
+
 			for s in readable:
+
 				if s is self._fid:
 					self._servsock, self._servaddr = self._fid.accept();
-					print '--> [%s]    Received connection from: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),self._servaddr);
+					print '--> [%s]    Received connection from: %s.' \
+					%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+					self._servaddr);
+
 					thread.start_new_thread (self.threadhdlr,());
 
 	def genrepeatcmd (self, repid):
 		splitstr = self._recvline.split(' ');
 		self._cmdargs = splitstr[2:len(splitstr)];
 		return;
-		# raise NotImplementedError ("Subclass must implement abstract method.");
+		# raise NotImplementedError("Subclass must implement abstract method.");
 
 	# Signal handler for clean exit on SIGINT and SIGTERM
 	def sighdlr (self, signal, frame):
-		print '### [%s]   Signal received! Clean quitting.', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+		print '### [%s]   Signal received! Clean quitting.', \
+			datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 		self._cmd = 'QUIT'
 			
 
@@ -80,14 +98,23 @@ class cmdClient(object):
 	def threadhdlr (self):
 
 		while (self._cmd.strip() != 'QUIT'):
-			# NOTE: Had to strip whitespaces, for some reason received commands have 
-			# a couple of extra whitespaces at the end. 
+			# NOTE: Had to strip whitespaces, for some reason received commands
+			# have a couple of extra whitespaces at the end. 
 			self._recvline = str(self._servsock.recv (1024)).strip();
-			print '--> [%s]   Received: %s, len: %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._recvline, len(self._recvline));
+			print '--> [%s]   Received: %s, len: %d.' \
+			% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), \
+			self._recvline, len(self._recvline));
+
+			# Looks like the remote side closed the connection!
+			if (len (self._recvline) == 0): 
+				print '### Remote side closed connection: Aborting.\n';
+				self._status = 'OK';
+				break;
 	
 			self._status = 'NOK';
 			splitstr = self._recvline.split(' ');
 			self._cmdproto = splitstr[0];
+
 			if (self._cmdproto != '0'):
 				print '### Invalid command protocol! Try again.';
 				self._servsock.send(self._status);
@@ -100,17 +127,26 @@ class cmdClient(object):
 				self._cmdargs = splitstr[2:len(splitstr)];
 				# Repeat the command if required, asking genrepeatcmd() 
 				# to generate the appropriate command
+
 				for ind in range (0, self._ncmdcalls):
 					self.genrepeatcmd (ind);
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
-					print '<-- [%s]   Running cmdstr: %s.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
+					print '<-- [%s]   Running cmdstr: %s.' \
+					% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), \
+					 self._cmdargs);
+
 					try:
-						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, preexec_fn=os.setsid));
-						# We only store the id of the thread which starts a command.
+						self._proc.append(subprocess.Popen (self._cmdargs, \
+						env=self._env, preexec_fn=os.setsid));
+						# only store the id of the thread which starts a cmd.
 						self._threadid.append(thread.get_ident()); 
 						self._status = 'OK';
-						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._status);
+						print \
+						'<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' \
+						%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						self._proc[ind].pid, self._status);
+
 						self._servsock.send(self._status);
 						# self._proc[ind].wait();
 						
@@ -125,30 +161,46 @@ class cmdClient(object):
 			elif self._cmd == 'STARTPIPE':
 				self._cmdargs = self._recvline.split('|')[0].strip().split(' ');
 				self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
+
 				for ind in range (0, self._ncmdcalls):
 					self.genrepeatcmd(ind);
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
-					print '<-- [%s]   Running cmdstr: %s.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmdargs);
+					print '<-- [%s]   Running cmdstr: %s.' \
+					% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), \
+					self._cmdargs);
+
 					try:
-						self._proc.append(subprocess.Popen (self._cmdargs, env=self._env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn=os.setsid));
-						self._pipe.append(subprocess.Popen (self._pipecmd, stdin=self._proc[ind].stdout, preexec_fn=os.setsid));
-						# We only store the id of the thread which starts a command.
+						self._proc.append(subprocess.Popen \
+						(self._cmdargs, env=self._env, stdout=subprocess.PIPE, \
+						stderr=subprocess.STDOUT, preexec_fn=os.setsid));
+
+						self._pipe.append(subprocess.Popen (self._pipecmd, \
+						stdin=self._proc[ind].stdout, preexec_fn=os.setsid));
+						# only store the id of the thread which starts a cmd.
 						self._threadid.append(thread.get_ident()); 
 						self._status = 'OK';
-						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' %(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._proc[ind].pid, self._status);
+						print '<-- [%s]   Successfully started pid %d for cmd execution, status: %s.' \
+						%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						self._proc[ind].pid, self._status);
+
 						self._servsock.send(self._status);
 						# self._proc[ind].wait();
 					except subprocess.CalledProcessError:
-						print '### [%s]   Error in executing process!' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+						print '### [%s]   Error in executing process!' \
+						% datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
 						self._status = 'NOK';
 						self._servsock.send(self._status);
 
 				
 			elif self._cmd == 'STOP':
+
 				for proc in self._proc:
+
 					if (proc.poll() == None): # Child  has not terminated
-						print '<-- [%s]   Terminating pid %d.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), proc.pid);
+						print '<-- [%s]   Terminating pid %d.' \
+						%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+						proc.pid);
 						os.killpg (proc.pid, signal.SIGTERM);
 						proc.wait(); # Prevent zombie processes
 						# proc.kill();
@@ -160,12 +212,15 @@ class cmdClient(object):
 				self._servsock.send(self._status);
 
 			elif self._cmd == 'QUIT':
-				print '<-- [%s]   Quitting cmdClient.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
+				print '<-- [%s]   Quitting cmdClient.' \
+				% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 				self._status = 'OK';
 				self._servsock.send(self._status);
 
 			else:
-				print '### [%s]   Cmd %s not understood. Try again.' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self._cmd);
+				print '### [%s]   Cmd %s not understood. Try again.' \
+				% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
+			 	self._cmd);
 				self._status = 'NOK';
 				self._servsock.send(self._status);
 	
@@ -180,7 +235,8 @@ class cmdClient(object):
 		# Send termination signal to all threads
 		# TODO.
 		if (hasattr(self, '_fid')):
-			print '<-- [%s]   Closing socket' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
+			print '<-- [%s]   Closing socket' \
+			% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
 			self._fid.close();	
 	
 # Processing block specific Cmdclient. Should override the checkRunStatus ()
@@ -207,9 +263,11 @@ class pipelineCmdClient (cmdClient):
 		cmdClient.__init__(self);
 		self._runcmd = ['start_pipeline.py'];
 		# Determine the number of CPUs available 
+
 		try:
 			import multiprocessing;
-			self._ncmdcalls = multiprocessing.cpu_count(); # python 2.6, number of virtual CPUs.
+			# python 2.6, number of virtual CPUs.
+			self._ncmdcalls = multiprocessing.cpu_count();
 		except (NotImplementedError, ImportError):
 			print '### Could not determine number of cpus, defaulting to 4';
 			self._ncmdcalls = 4;
@@ -224,30 +282,31 @@ class pipelineCmdClient (cmdClient):
 	def genrepeatcmd (self, repid):
 		index = self._recvline.find('--monitor-port');
 		monport=int(self._recvline[index:].split(' ')[1]);
-		recvline_copy = self._recvline.replace(str(monport), str(monport+repid)); # Make changes to the copy
+
+		# Make changes to the copy
+		recvline_copy = self._recvline.replace(str(monport),str(monport+repid));
 		splitstr = recvline_copy.split(' ');
 		self._cmdargs = splitstr[2:len(splitstr)];
 		return;
 	
 class gpuCorrCmdClient (cmdClient):
-	def __init__ (self):
-		cmdClient.__init__(self);
-		# self._runcmd = 'watch -n1 date';
-		# self._runcmd = '/home/pprasad/gpu-corr/afaac_GPU_interface/src/run.rt.nodel.dop312';
+	def __init__ (self, cmdport):
+		cmdClient.__init__(self, cmdport);
 		self._ncmdcalls = 1;
 		self._env["DISPLAY"]=":0";
+		self._env['GPU_FORCE_64BIT_PTR'] ="1";
 		self._env["PLATFORM"]="AMD Accelerated Parallel Processing";
 		self._env["TYPE"] = "GPU"
 		# self._runcmd = 'numactl -C 11-19 /home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC ';
-		self._runcmd = ['/home/pprasad/gpu-corr/Triple-A/AARTFAAC/AARTFAAC'];
+		self._runcmd = ['numactl', '-i',  '0-1', '/home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
 
 
 class lcuafaacCmdClient (cmdClient):
-	def __init__ (self):
-		cmdClient.__init__(self);
+	def __init__ (self, cmdport):
+		cmdClient.__init__(self, cmdport);
 		self._runcmd = ['watch -n1 date'];
 
 	def checkRunStatus (self, output):
@@ -259,34 +318,54 @@ class lcuafaacCmdClient (cmdClient):
 		return;
 
 class rtmonCmdClient (cmdClient):
-	def __init__ (self):
-		cmdClient.__init__(self);
+	def __init__ (self, cmdport):
+		cmdClient.__init__(self, cmdport);
 		self._runcmd = ['atv.py'];
 		# self._runcmd = ['python', '/usr/local/lib/python2.7/dist-packages/rtmon/atv.py'];
 
 	def checkRunStatus (self, output):
 		return 'OK';
 
+class catCmdClient (cmdClient):
+	def __init__ (self, cmdport):
+		cmdClient.__init__(self, cmdport);
+		self._runcmd = ['cat'];
+
+	def checkRunStatus (self, output):
+		return 'OK';
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--procblk", help="Specify which processing block this cmdclient controls. Options: gpucorr = GPU correlator\n lcuafaac = AARTFAAC LCU ,pelicanpipeline = Pelican pipeline, pelicanserver = Pelican Server.", default='gpucorr');
+	parser.add_argument("--procblk", \
+		help="Specify which processing block this cmdclient controls.\n \
+		Options: gpucorr         = GPU correlator\n \
+				 lcuafaac        = AARTFAAC LCU\n \
+				 pelicanpipeline = Pelican pipeline\n \
+				 pelicanserver   = Pelican Server\n \
+				 cat             = cat a file\n.", default='gpucorr');
+	parser.add_argument ("--cmdport", \
+				help="Specify the port on which cmdclient should wait for \
+					 commands. Default 45000", default=45000);
+
 	client = parser.parse_args();
 
 	if client.procblk.lower() == 'gpucorr':
-		cl = gpuCorrCmdClient ();
+		cl = gpuCorrCmdClient (int(client.cmdport));
 
 	elif client.procblk.lower() == 'lcuafaac':
-		cl = lcuafaacCmdClient();	
+		cl = lcuafaacCmdClient(int(client.cmdport));	
 
 	elif client.procblk.lower() == 'pelicanpipeline':
-		cl = pipelineCmdClient();
+		cl = pipelineCmdClient(int(client.cmdport));
 
 	elif client.procblk.lower() == 'pelicanserver':
-		cl = pelicanServerCmdClient();
+		cl = pelicanServerCmdClient(int(client.cmdport));
 
 	elif client.procblk.lower() == 'rtmon':
-		cl = rtmonCmdClient ();
+		cl = rtmonCmdClient (int(client.cmdport));
+
+	elif client.procblk.lower() == 'cat':
+		cl = catCmdClient (int(client.cmdport));
 
 	else:
 		print '### Unknown processing block!';
