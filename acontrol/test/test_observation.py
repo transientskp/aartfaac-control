@@ -23,7 +23,7 @@ class ObservationTestCase(TestWithParset):
 
     def test_duration(self):
         self.assertEqual(
-            self.observation.duration,
+            self.observation.duration.seconds,
             (self.stop - self.start).seconds
         )
 

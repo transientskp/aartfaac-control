@@ -103,7 +103,7 @@ class Configuration(object):
             output = [(self.atv_cmd[0], self.atv_cmd[3])]
             args["o"] = ",".join(["tcp:%s:%i" % (t[0], t[1]) for t in output])
             args["o"] += "," + ",".join("null:" for i in range(8-len(output)))
-            args["r"] = obs.duration
+            args["r"] = obs.duration.seconds
 
         else:
             raise NotImplementedError

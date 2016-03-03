@@ -23,7 +23,7 @@ class Observation(object):
         start_time = self.start_time
         if self.end_time > datetime.datetime.now():
             start_time = max(self.start_time, datetime.datetime.now())
-        return (self.end_time - start_time).seconds
+        return self.end_time - start_time
 
     @property
     def start(self):
@@ -38,7 +38,7 @@ class Observation(object):
         return self.valid and self.antenna_array == "LBA"
 
     def __str__(self):
-        return "OBS - %s (%s)" % (self.antenna_set, (self.end_time-self.start_time))
+        return "OBS - %s (%s)" % (self.antenna_set, (self.duration))
 
     def __cmp__(self, other):
         return cmp(self.start_time, other.start_time)
