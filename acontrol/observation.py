@@ -1,4 +1,5 @@
 from acontrol.parset import Parset
+import datetime
 
 class Observation(object):
     """
@@ -19,7 +20,10 @@ class Observation(object):
 
     @property
     def duration(self):
-        return (self.end_time - self.start_time).seconds
+        start_time = self.start_time
+        if self.end_time > datetime.datetime.now():
+            start_time = max(self.start_time, datetime.datetime.now())
+        return (self.end_time - start_time).seconds
 
     @property
     def start(self):
