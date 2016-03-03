@@ -169,8 +169,10 @@ class WorkerService(Service):
                 c.close()
 
             # Next we start the new pipeline run given the observation
+            subject = "[-] %s" % (obs)
             if success:
                 msg += "All processes started successfully\n"
+                subject = "[+] %s" % (obs)
                 print "Starting", obs
             else:
                 print "Failure when initiating", obs
@@ -180,7 +182,7 @@ class WorkerService(Service):
             filenames = [obs.filepath]
             if self._activeconfig:
                 filenames.append(self._activeconfig.filepath)
-            self._email.send("%s" % (str(obs)), msg, filenames)
+            self._email.send(subject, msg, filenames)
         else:
             print "Skipping", obs
 

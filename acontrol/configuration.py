@@ -21,8 +21,8 @@ class Configuration(object):
         self.atv_cmd = eval(self._parser.get("commands", "atv"))
         self.correlator_cmd = eval(self._parser.get("commands", "correlator"))
         self.corsim_cmd = eval(self._parser.get("commands", "correlator"))
-        self.atv_server = eval(self._parser.get("commands", "server"))
-        self.atv_pipeline = eval(self._parser.get("commands", "pipeline"))
+        self.server_cmd = eval(self._parser.get("commands", "server"))
+        self.pipeline_cmd = eval(self._parser.get("commands", "pipeline"))
 
 
     def is_valid(self):
@@ -114,9 +114,31 @@ class Configuration(object):
     
     def server(self, obs):
         args = self.server_cmd[4]
+        streams = ""
+
+        if obs.antenna_array.lower() in "lba":
+            subbands, channels = self.subbands(self.lba_mode)
+            for i in range(len(subbands)):
+                streams += " --streams %i %i" % (channels[i][-1]-channels[i][0]+1, subbands[i])
+        else:
+            raise NotImplementedError
+
+        cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
+        cmd += streams + " 0-62"
+        return (self.server_cmd[2], self.server_cmd[0], self.server_cmd[1], cmd)
+
 
     def pipelines(self, obs):
-        args = self.pipeline_cmd[4]
+        args = copy.deepcopy(self.pipeline_cmd[4])
+
+        if obs.antenna_array.lower() in "lba":
+            args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
+            args["casa"] = "/data/%s" % (self.start_time.strftime("%Y%m%d-%H%M"))
+        else:
+            raise NotImplementedError
+
+        cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
+        return (self.pipeline_cmd[2], self.pipeline_cmd[0], self.pipeline_cmd[1], cmd)
 
     
     def __str__(self):
