@@ -129,16 +129,20 @@ class Configuration(object):
 
 
     def pipelines(self, obs):
-        args = copy.deepcopy(self.pipeline_cmd[4])
+        pipelines = []
 
-        if obs.antenna_array.lower() in "lba":
-            args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
-            args["casa"] = "/data/%s" % (self.start_time.strftime("%Y%m%d-%H%M"))
-        else:
-            raise NotImplementedError
+        for pipe in self.pipeline_cmd:
+            args = copy.deepcopy(pipe[4])
+            if obs.antenna_array.lower() in "lba":
+                args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
+                args["casa"] = "/data/%s" % (self.start_time.strftime("%Y%m%d-%H%M"))
+            else:
+                raise NotImplementedError
 
-        cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
-        return (self.pipeline_cmd[2], self.pipeline_cmd[0], self.pipeline_cmd[1], cmd)
+            cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
+            pipelines.append((pipe[2], pipe[0], pipe[1], cmd))
+
+        return pipelines
 
     
     def __str__(self):

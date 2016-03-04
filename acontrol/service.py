@@ -132,8 +132,10 @@ class WorkerService(Service):
             if success:
                 msg += "Using aartfaac configuration `%s'\n" % (self._activeconfig.filepath)
                 # TODO: Implement setstations()
-                #self._activeconfig.setstations(obs)
+                # self._activeconfig.setstations(obs)
                 hosts.append(self._activeconfig.atv(obs))
+                hosts.append(self._activeconfig.server(obs))
+                # hosts += self._activeconfig.pipelines(obs)
                 hosts.append(self._activeconfig.correlator(obs))
 
             for host in hosts:
