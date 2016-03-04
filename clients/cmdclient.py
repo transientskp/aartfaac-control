@@ -91,7 +91,7 @@ class cmdClient(object):
 	def sighdlr (self, signal, frame):
 		print '### [%s]   Signal received! Clean quitting.', \
 			datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
-		self._cmd = 'QUIT'
+		self._cmd = 'STOP'
 			
 
 	# Thread to service incoming commands.
@@ -125,12 +125,12 @@ class cmdClient(object):
 
 			if self._cmd == 'START':
 				self._cmdargs = splitstr[2:len(splitstr)];
+				self._cmdargs[0:0] = self._runcmd;
 				# Repeat the command if required, asking genrepeatcmd() 
 				# to generate the appropriate command
 
 				for ind in range (0, self._ncmdcalls):
-					self.genrepeatcmd (ind);
-					self._cmdargs[0:0] = self._runcmd;
+					# self.genrepeatcmd (ind);
 					# self._cmdargs.insert(0, self._runcmd);
 					print '<-- [%s]   Running cmdstr: %s.' \
 					% (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), \
@@ -147,15 +147,17 @@ class cmdClient(object):
 						%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),\
 						self._proc[ind].pid, self._status);
 
-						self._servsock.send(self._status);
 						# self._proc[ind].wait();
 						
 					except (subprocess.CalledProcessError,OSError) as err:
 						print '### [%s]   Error in executing process! [%s]' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), repr(err));
+						if (self._status == 'OK'):
+							continue
 						self._status = 'NOK';
-						self._servsock.send(self._status);
+						# self._servsock.send(self._status);
 	
 				# self._status = self.checkRunStatus(cmdout);
+				self._servsock.send(self._status);
 				
 	
 			elif self._cmd == 'STARTPIPE':
@@ -163,7 +165,7 @@ class cmdClient(object):
 				self._pipecmd = self._recvline.split('|')[1].strip().split(' ');
 
 				for ind in range (0, self._ncmdcalls):
-					self.genrepeatcmd(ind);
+					# self.genrepeatcmd(ind); # No monitor port functionality in pipelines now.
 					self._cmdargs[0:0] = self._runcmd;
 					# self._cmdargs.insert(0, self._runcmd);
 					print '<-- [%s]   Running cmdstr: %s.' \
@@ -245,8 +247,8 @@ class cmdClient(object):
 # Object to handle the startup of a pelican server, including generating a 
 # status on whether startup was successful, based on parsing the stdout.
 class pelicanServerCmdClient (cmdClient):
-	def __init__ (self):
-		cmdClient.__init__(self);
+	def __init__ (self, cmdport):
+		cmdClient.__init__(self, cmdport);
 		self._runcmd = ['start_server.py'];
 		self._ncmdcalls = 1;
 		# self._runcmd = 'watch -n1 date';
@@ -259,8 +261,8 @@ class pelicanServerCmdClient (cmdClient):
 # available on the client machine.
 # We reimplement the  genrepeatcmd() function for this.
 class pipelineCmdClient (cmdClient):
-	def __init__ (self):
-		cmdClient.__init__(self);
+	def __init__ (self, cmdport):
+		cmdClient.__init__(self, cmdport);
 		self._runcmd = ['start_pipeline.py'];
 		# Determine the number of CPUs available 
 
