@@ -119,7 +119,7 @@ class Configuration(object):
         if obs.antenna_array.lower() in "lba":
             subbands, channels = self.subbands(self.lba_mode)
             for i in range(len(subbands)):
-                streams += " --streams %i %i" % (channels[i][-1]-channels[i][0]+1, subbands[i])
+                streams += " --stream %i %i" % (channels[i][-1]-channels[i][0]+1, subbands[i])
         else:
             raise NotImplementedError
 
@@ -134,7 +134,7 @@ class Configuration(object):
         for pipe in self.pipeline_cmd:
             args = copy.deepcopy(pipe[4])
             if obs.antenna_array.lower() in "lba":
-                args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
+                args["antenna-positions"] = args["antenna-positions"] % (obs.antenna_set.lower())
                 args["casa"] = "/data/%s" % (self.start_time.strftime("%Y%m%d-%H%M"))
             else:
                 raise NotImplementedError

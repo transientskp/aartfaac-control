@@ -135,7 +135,7 @@ class WorkerService(Service):
                 # self._activeconfig.setstations(obs)
                 hosts.append(self._activeconfig.atv(obs))
                 hosts.append(self._activeconfig.server(obs))
-                # hosts += self._activeconfig.pipelines(obs)
+                hosts += self._activeconfig.pipelines(obs)
                 hosts.append(self._activeconfig.correlator(obs))
 
             for host in hosts:
