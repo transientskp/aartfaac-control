@@ -156,6 +156,21 @@ class WorkerService(Service):
                     c.close()
                     break
 
+                msg += "Connected to %s:%d\n" % (host[1], host[2])
+                msg += "Terminated `%s' successfully with arguments:\n" % (host[0])
+                msg += "  " + host[3] + "\n"
+                c.close()
+
+            for host in hosts:
+                c = Connection()
+
+                # Try to connect
+                if c.connect(host[1], host[2]) != Connection.OK:
+                    msg += "Unable to connect to `%s:%i'" % (host[1], host[2])
+                    success = False
+                    c.close()
+                    break
+
                 # Now we (re) start this process
                 response = c.send("0 START " + host[3])
                 if response != Connection.OK:
@@ -178,7 +193,8 @@ class WorkerService(Service):
                 print "Starting", obs
             else:
                 print "Failure when initiating", obs
-                print "Log:\n\n\n",msg,"\n\n"
+
+            print "Log:\n\n\n",msg,"\n\n"
 
             # Finally we send an email notifying people about the run
             filenames = [obs.filepath]

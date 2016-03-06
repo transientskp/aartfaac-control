@@ -101,8 +101,9 @@ class Configuration(object):
 
         if obs.antenna_array.lower() in "lba":
             output = [(self.atv_cmd[0], self.atv_cmd[3])]
+            subbands, channels = self.subbands(self.lba_mode)
+            output += [("10.195.100.30", i+4100) for i in range(1,len(subbands))]
             args["o"] = ",".join(["tcp:%s:%i" % (t[0], t[1]) for t in output])
-            args["o"] += "," + ",".join("null:" for i in range(8-len(output)))
             args["r"] = obs.duration.seconds
 
         else:
@@ -135,7 +136,7 @@ class Configuration(object):
             args = copy.deepcopy(pipe[4])
             if obs.antenna_array.lower() in "lba":
                 args["antenna-positions"] = args["antenna-positions"] % (obs.antenna_set.lower())
-                args["casa"] = "/data/%s" % (self.start_time.strftime("%Y%m%d-%H%M"))
+                args["casa"] = "/data/%s" % (obs.start_time.strftime("%Y%m%d-%H%M"))
             else:
                 raise NotImplementedError
 
