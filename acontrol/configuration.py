@@ -1,5 +1,5 @@
-import ConfigParser
 import time, datetime
+import json
 import copy
 
 class Configuration(object):
@@ -7,22 +7,11 @@ class Configuration(object):
     Encapsulates an aartfaac configuration file
     """
     def __init__(self, filepath):
-        self._parser = ConfigParser.RawConfigParser()
-        self._parser.read(filepath)
+        self._config = json.loads(open(filepath,'r').read())
         self.filepath = filepath
-        ts = time.strptime(self._parser.get("general", "starttime"), "%Y-%m-%d %H:%M:%S")
+        ts = time.strptime(self._config["starttime"], "%Y-%m-%d %H:%M:%S")
         self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon, ts.tm_mday,
                 ts.tm_hour, ts.tm_min, ts.tm_sec)
-        self.lba_mode = eval(self._parser.get("lba", "obs"))
-        self.hba_mode = eval(self._parser.get("hba", "obs"))
-        self.lba_atv = eval(self._parser.get("lba", "atv"))
-        self.hba_atv = eval(self._parser.get("hba", "atv"))
-        self.tracklist = eval(self._parser.get("general", "tracklist"))
-        self.atv_cmd = eval(self._parser.get("commands", "atv"))
-        self.correlator_cmd = eval(self._parser.get("commands", "correlator"))
-        self.corsim_cmd = eval(self._parser.get("commands", "correlator"))
-        self.server_cmd = eval(self._parser.get("commands", "server"))
-        self.pipeline_cmd = eval(self._parser.get("commands", "pipeline"))
 
 
     def is_valid(self):
@@ -45,37 +34,18 @@ class Configuration(object):
         return subband_width * (subband + subband_offset)
 
 
-    def subbands(self, antenna_mode, sample_clock=200e6, nyquist_zone=1, num_channels=64):
-        """Computes subbands and corresponding channels given an obs type"""
-        subband_width = sample_clock/1024.0
-        channel_width = subband_width/num_channels
-        subbands = {}
-        for central_freq,bandwidth in antenna_mode:
-            start_freq = central_freq - bandwidth/2
-            s = Configuration.freq2sub(start_freq, sample_clock, nyquist_zone)
-            C = int((start_freq-Configuration.sub2freq(s, sample_clock, nyquist_zone))/channel_width)
-            N = int(bandwidth/channel_width + 0.5)
-            for i in range(N):
-                c = ((i + C) % num_channels)
-                if c == 0 and i > 0:
-                    s += 1
-                if not subbands.has_key(s):
-                    subbands[s] = []
-                # As the correlator discards the first channel and shifts
-                # indices by -1, so do we
-                if c - 1 >= 0:
-                    subbands[s].append(c-1)
-
-        return subbands.keys(), subbands.values() 
+    @staticmethod
+    def merge(A, B):
+        for k,v in A.iteritems():
+            B[k] = v
+        return B
 
 
     def stations(self, obs):
         cmd = "setsubbands.sh "
 
-        if obs.antenna_array.lower() in "lba":
-            img, _ = self.subbands(self.lba_mode)
-            atv, _ = self.subbands([self.lba_atv])
-            cmd += ",".join(map(str, atv + img))
+        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
+            cmd += ",".join(map(str, self._config["lba"]["subbands"]))
         else:
             raise NotImplementedError
 
@@ -83,20 +53,32 @@ class Configuration(object):
 
 
     def atv(self, obs):
-        args = copy.deepcopy(self.atv_cmd[4])
-
-        if obs.antenna_array.lower() in "lba":
+        atvcfg = self._config["programs"]["atv"]
+        default_args = {"antpos": "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat", "output":"/data/atv", "snapshot":"/var/www/html", "port":5000}
+        args = self.merge(atvcfg["args"], default_args)
+        
+        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
             args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
-            args["freq"] = (self.lba_atv[0])
-            args["port"] = (self.atv_cmd[3])
+            args["freq"] = self.sub2freq(atvcfg["subband"])
         else:
             raise NotImplementedError
 
         cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in args.iteritems()])
-        return (self.atv_cmd[2], self.atv_cmd[0], self.atv_cmd[1], cmd)
+        address = atvcfg["address"][0].split(':')
+        return ("atv", address[0], int(address[1]), cmd)
 
 
     def correlator(self, obs):
+        corrcfg = self._config["programs"]["correlator"]
+        default_args = {"p":1, "n":288, "t":768, "c":256, "C":63, "m":9, "d":0, "g":"0-9", "b":16, "s":8, "r":0, "N":"4-11,28-35/16-23,40-47", "A":"0:6", "O":"0:4,1:4", "i":"10.195.100.3:53268,10.195.100.3:53276,10.195.100.3:53284,10.195.100.3:53292,10.195.100.3:53300,10.195.100.3:53308"}
+        args = self.merge(corrcfg["args"], default_args)
+        address = corrcfg["address"].split(':')
+
+        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
+            outputs = [self._config["programs"]["atv"]["address"], 
+        else:
+            raise NotImplementedError
+        """
         args = self.correlator_cmd[4]
 
         if obs.antenna_array.lower() in "lba":
@@ -108,12 +90,14 @@ class Configuration(object):
 
         else:
             raise NotImplementedError
+        """
 
         cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
-        return (self.correlator_cmd[2], self.correlator_cmd[0], self.correlator_cmd[1], cmd)
+        return ("correlator", address[0], int(address[1]), cmd)
 
     
     def server(self, obs):
+        """
         args = self.server_cmd[4]
         streams = ""
 
@@ -126,10 +110,12 @@ class Configuration(object):
 
         cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
         cmd += streams + " 0-62"
-        return (self.server_cmd[2], self.server_cmd[0], self.server_cmd[1], cmd)
+        """
+        return (0,0,0,0)
 
 
     def pipelines(self, obs):
+        """
         pipelines = []
 
         for pipe in self.pipeline_cmd:
@@ -143,7 +129,8 @@ class Configuration(object):
             cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
             pipelines.append((pipe[2], pipe[0], pipe[1], cmd))
 
-        return pipelines
+        """
+        return [(0,0,0,0)]
 
     
     def __str__(self):

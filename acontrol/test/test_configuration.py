@@ -19,7 +19,7 @@ class ConfigurationTestCase(TestWithConfig):
         self.parset_file.write(EXAMPLE_PARSET)
         self.parset_file.seek(0)
         self.obs = Observation(self.parset_file.name)
-        self.start = datetime.datetime(2016, 2, 26, 14, 25)
+        self.start = datetime.datetime(2016, 3, 7, 4, 12, 47)
 
 
     def tearDown(self):
@@ -55,11 +55,6 @@ class ConfigurationTestCase(TestWithConfig):
         self.assertTrue(self.config < new_cfg)
         new_cfg.start_time -= datetime.timedelta(20)
         self.assertTrue(self.config > new_cfg)
-
-
-    def test_subbands(self):
-        subbands, channels = self.config.subbands(self.config.lba_mode, SAMPLING_CLOCK)
-        self.assertEqual(subbands, [295, 296, 297, 298, 299, 300, 301, 302])
 
 
     def test_atv(self):
