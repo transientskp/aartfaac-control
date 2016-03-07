@@ -32,13 +32,12 @@ EXAMPLE_CONFIG = """
   },
   "programs": {
     "atv": {
-      "address": [
-        "10.144.6.13:45000"
-      ],
+      "address": "10.144.6.13:45000",
       "subband": 295,
       "args": {
         "output": "\/data\/atv",
-        "snapshot": "\/var\/www\/html"
+        "snapshot": "\/var\/www\/html",
+        "port": 5000
       }
     },
     "correlator": {
@@ -48,11 +47,10 @@ EXAMPLE_CONFIG = """
       }
     },
     "server": {
-      "address": [
-        "10.195.100.30:45000"
-      ],
+      "address": "10.195.100.30:45000",
       "args": {
-        "buffer-max-size": 64424509440
+        "buffer-max-size": 64424509440,
+        "input-host": "10.195.100.3"
       }
     },
     "pipeline": {
