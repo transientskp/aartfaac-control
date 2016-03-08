@@ -33,7 +33,7 @@ EXAMPLE_CONFIG = """
   "programs": {
     "atv": {
       "address": "10.144.6.13:45000",
-      "subband": 295,
+      "subband": 299,
       "args": {
         "output": "\/data\/atv",
         "snapshot": "\/var\/www\/html",

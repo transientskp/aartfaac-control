@@ -76,11 +76,11 @@ class Configuration(object):
         if obs.antenna_set.lower() in self._config["lba"]["modes"]:
             serverip = self._config["programs"]["server"]["address"].split(':')[0]
             atvip = self._config["programs"]["atv"]["address"].split(':')[0]
-            outputs = ["%s:%i" % (atvip, self._config["programs"]["atv"]["args"]["port"])]
             n = self._config["lba"]["subbands"].index(self._config["programs"]["atv"]["subband"])
             N = len(self._config["lba"]["subbands"])
-            ports = range(0,n) + range(n+1,N)
-            outputs += ["%s:%i" % (serverip, 4100+i) for i in ports]
+            outputs = ["%s:%i" % (serverip, 4100+i) for i in range(n)]
+            outputs += ["%s:%i" % (atvip, self._config["programs"]["atv"]["args"]["port"])]
+            outputs += ["%s:%i" % (serverip, 4100+i) for i in range(n, N-1)]
             args["o"] = ",".join(["tcp:%s" % (addr) for addr in outputs])
             args["r"] = obs.duration.seconds
         else:
