@@ -5,8 +5,7 @@ from twisted.internet import protocol
 from twisted.protocols import basic
 from twisted.python import usage
 from twisted.python import log
-from twisted.application.service import Service
-from twisted.application.service import MultiService
+from twisted.application import internet
 
 class WriteProcessProtocol(protocol.ProcessProtocol):
     """This process protocol writes stderr,stdout to file"""
@@ -88,10 +87,9 @@ class Options(usage.Options):
 
 
 def makeService(config):
-    aclient_service = MultiService()
     factory = protocol.ServerFactory()
     factory.protocol = ControlProtocol
-    reactor.listenTCP(config['port'], factory)
+    service = internet.TCPServer(config['port'], factory)
+    return service
 
-    return aclient_service
 
