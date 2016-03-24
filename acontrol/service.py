@@ -149,7 +149,7 @@ class WorkerService(Service):
                     break
 
                 # First we stop a previous pipeline run, if existing...
-                response = c.send("0 STOP")
+                response = c.send("0 STOP\n")
                 if response != Connection.OK:
                     msg += "Got `%s' when trying to terminate `%s'\n" % (response, host[0])
                     success = False
@@ -172,7 +172,7 @@ class WorkerService(Service):
                     break
 
                 # Now we (re) start this process
-                response = c.send("0 START " + host[3])
+                response = c.send("0 START " + host[3] + "\n")
                 if response != Connection.OK:
                     msg += "Got `%s' when trying to execute `%s' with arguments:\n" % (response, host[0])
                     msg += "  " + host[3] + "\n"
