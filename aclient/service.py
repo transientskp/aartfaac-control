@@ -7,6 +7,7 @@ from twisted.python import log
 from twisted.application import internet
 
 from aclient.serverprotocol import ServerProtocol
+from aclient.pipelineprotocol import PipelineProtocol
 
 class Options(usage.Options):
     optParameters = [
@@ -16,7 +17,7 @@ class Options(usage.Options):
 
 
 def makeService(config):
-    protocols = {"server":ServerProtocol}
+    protocols = {"server":ServerProtocol, "pipeline":PipelineProtocol}
     factory = protocol.ServerFactory()
     factory.protocol = protocols[config['program'].lower()]
     service = internet.TCPServer(config['port'], factory)
