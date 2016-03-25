@@ -15,14 +15,19 @@ class CorrelatorProtocol(ControlProtocol):
             cmd = ['numactl', '-i',  '0-1', '/home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC'] + argv.split()
             CorrelatorProtocol.process = WriteProcessProtocol('correlator', self.factory.config['logdir'])
             reactor.spawnProcess(CorrelatorProtocol.process, cmd[0], cmd, env=CorrelatorProtocol.env)
+            self.sendSuccess()
         else:
             print "Error: Correlator is already running, stop first"
+            self.sendFailure()
 
     def stop(self):
         try:
             if CorrelatorProtocol.process and CorrelatorProtocol.process.is_running:
                 CorrelatorProtocol.process.transport.signalProcess(signal.SIGTERM)
+                self.sendSuccess()
             else:
                 print "Error: Process already exited"
+                self.sendFailure()
         except OSError as e:
             print "Error: Unable to kill {}".format(CorrelatorProtocol.process.pid)
+            self.sendFailure()
