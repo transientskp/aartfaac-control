@@ -25,9 +25,7 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
         self.filestdout.write(data)
 
     def errReceived(self, data):
-        log.err(data)
         self.filestderr.write(data)
-        self.filestdout.flush()
 
     def processEnded(self, status):
         self.is_running = False
