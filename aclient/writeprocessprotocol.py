@@ -22,7 +22,6 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
 
     def outReceived(self, data):
         self.filestdout.write(data)
-        self.filestdout.flush()
 
     def errReceived(self, data):
         print "Error: {}".format(data)

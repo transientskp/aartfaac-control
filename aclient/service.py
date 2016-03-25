@@ -42,7 +42,6 @@ def makeService(config):
 
     if not os.path.exists(config['logdir']):
         os.makedirs(config['logdir'])
-        print "Created directory '{}' for logging programs".format(config['logdir'])
 
     factory = ProgramFactory(config)
     factory.protocol = PROTOCOLS[config['program'].lower()]
