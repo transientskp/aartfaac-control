@@ -11,6 +11,7 @@ class Configuration(object):
     Encapsulates an aartfaac configuration file
     """
     def __init__(self, filepath):
+        self.filepath = filepath
         self._config = json.loads(open(filepath,'r').read())
         ts = time.strptime(self._config["starttime"], "%Y-%m-%d %H:%M:%S")
         self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon, ts.tm_mday,
