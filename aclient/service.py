@@ -1,10 +1,8 @@
 import os
 import sys
 
-from twisted.internet import reactor
 from twisted.internet import protocol
 from twisted.python import usage
-from twisted.python import log
 from twisted.application import internet
 
 from aclient.correlatorprotocol import CorrelatorProtocol

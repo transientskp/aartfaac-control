@@ -1,4 +1,5 @@
 from twisted.protocols import basic
+from twisted.python import log
 
 class ControlProtocol(basic.LineReceiver):
     """This abstract protocol handles acontrol messages"""
@@ -11,17 +12,17 @@ class ControlProtocol(basic.LineReceiver):
         split = line.split()
 
         if ControlProtocol.VERSION != split[0] or len(split) < 2:
-            print "Error: Invalid protocol version"
+            log.err("Invalid protocol version")
             self.sendFailure()
             return
 
-        print "Received command {}".format(split[1])
+        log.msg("Received command {}".format(split[1]))
         if split[1] == "START":
             self.start(" ".join(split[2:]))
         elif split[1] == "STOP":
             self.stop()
         else:
-            print "Invalid command"
+            log.err("Invalid command")
             self.sendFailure()
             
     def sendSuccess(self):
@@ -31,10 +32,10 @@ class ControlProtocol(basic.LineReceiver):
         self.transport.write('NOK')
 
     def connectionLost(self, reason):
-        print "Disconnected, reason: {}".format(reason.getErrorMessage())
+        log.msg("Disconnected, reason: {}".format(reason.getErrorMessage()))
 
     def connectionMade(self):
-        print "Connected to '{}'".format(self.transport.getPeer())
+        log.msg("Connected to '{}'".format(self.transport.getPeer()))
 
     def start(self, argv):
         raise NotImplementedError
