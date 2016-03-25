@@ -7,6 +7,7 @@ install:
   - pip install coveralls
 script: 
   coverage run --source=acontrol --omit=acontrol/test/*.py $(which trial) acontrol
+  coverage run --source=aclient --omit=aclient/test/*.py $(which trial) aclient
 after_success:
   coveralls
 notifications:
