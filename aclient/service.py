@@ -28,7 +28,7 @@ class ProgramFactory(protocol.ServerFactory):
 class Options(usage.Options):
     optParameters = [
         ["port", None, 45000, "Port to listen on for incomming connections"],
-        ["program", None, None, "Program to start, one of {{{}}}".format(", ".join(PROTOCOLS.keys()))],
+        ["program", None, None, "Program to start, one of {%s}" % (", ".join(PROTOCOLS.keys()))],
         ["logdir", None, "/tmp/aclient", "Program logfiles directory"]
     ]
 
