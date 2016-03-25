@@ -14,7 +14,7 @@ class PipelineProtocol(ControlProtocol):
         for i,p in enumerate(PipelineProtocol.process):
             if not p or not p.is_running:
                 print "Starting pipeline with args: {}".format(argv)
-                PipelineProtocol.process[i] = WriteProcessProtocol(cmd[0], '/tmp')
+                PipelineProtocol.process[i] = WriteProcessProtocol(cmd[0], self.factory.config['logdir'])
                 reactor.spawnProcess(PipelineProtocol.process[i], cmd[0], cmd, env=os.environ)
             else:
                 print "Error: Pipeline is already running, stop first"

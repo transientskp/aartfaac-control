@@ -3,14 +3,11 @@ import os
 from twisted.internet import protocol
 
 class WriteProcessProtocol(protocol.ProcessProtocol):
-    """This process protocol writes stderr,stdout to file"""
+    """This process protocol writes stderr,stdout to file for some process"""
     def __init__(self, name, path):
         self.name = name
         self.path = path
         self.is_running = False
-        if not os.path.exists(path):
-            print "Created path '{}' for logging process {}".format(path, name)
-            os.makedirs(path)
 
     def connectionMade(self):
         self.is_running = True
