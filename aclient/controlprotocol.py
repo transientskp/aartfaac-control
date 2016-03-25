@@ -12,19 +12,23 @@ class ControlProtocol(basic.LineReceiver):
 
         if ControlProtocol.VERSION != split[0] or len(split) < 2:
             print "Error: Invalid protocol version"
-            self.transport.write('NOK')
+            self.sendFailure()
             return
 
         print "Received command {}".format(split[1])
         if split[1] == "START":
             self.start(" ".join(split[2:]))
-            self.transport.write('OK')
         elif split[1] == "STOP":
             self.stop()
-            self.transport.write('OK')
         else:
             print "Invalid command"
-            self.transport.write('NOK')
+            self.sendFailure()
+            
+    def sendSuccess(self):
+        self.transport.write('OK')
+
+    def sendFailure(self):
+        self.transport.write('NOK')
 
     def connectionLost(self, reason):
         print "Disconnected, reason: {}".format(reason.getErrorMessage())
@@ -32,7 +36,7 @@ class ControlProtocol(basic.LineReceiver):
     def connectionMade(self):
         print "Connected to '{}'".format(self.transport.getPeer())
 
-    def start(self, args):
+    def start(self, argv):
         raise NotImplementedError
 
     def stop(self):
