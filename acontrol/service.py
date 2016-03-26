@@ -2,7 +2,6 @@ import os
 import fnmatch
 import time, datetime
 import glob
-import tempfile
 
 from acontrol.observation import Observation
 from acontrol.configuration import Configuration
@@ -95,7 +94,7 @@ class WorkerService(Service):
         self._fnpattern = config['lofar-pattern']
         self._aapattern = config['config-pattern']
         self._email = email
-        self._cfg_file = tempfile.NamedTemporaryFile(mode='w')
+        self._cfg_file = open(config['config-dir'] + '/AARTFAAC:000000.json', 'w')
         self._cfg_file.write(EXAMPLE_CONFIG)
         self._cfg_file.seek(0)
         self._activeconfig = Configuration(self._cfg_file.name)
@@ -138,6 +137,7 @@ class WorkerService(Service):
                 hosts += self._activeconfig.pipelines(obs)
                 hosts.append(self._activeconfig.correlator(obs))
 
+            # STOP all running processes
             for host in hosts:
                 c = Connection()
 
@@ -152,15 +152,15 @@ class WorkerService(Service):
                 response = c.send("0 STOP\n")
                 if response != Connection.OK:
                     msg += "Got `%s' when trying to terminate `%s'\n" % (response, host[0])
-                    success = False
-                    c.close()
-                    break
 
                 msg += "Connected to %s:%d\n" % (host[1], host[2])
                 msg += "Terminated `%s' successfully with arguments:\n" % (host[0])
                 msg += "  " + host[3] + "\n"
                 c.close()
 
+            time.sleep(2)
+
+            # START all processes
             for host in hosts:
                 c = Connection()
 
