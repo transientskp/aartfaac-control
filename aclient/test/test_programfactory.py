@@ -13,18 +13,18 @@ class ProgramFactoryTestCase(unittest.TestCase):
         self.proto.makeConnection(self.tr)
 
     def test_start(self):
-        self.assertRaises(NotImplementedError, self.proto.dataReceived, '0 START\n')
+        self.assertRaises(NotImplementedError, self.proto.dataReceived, '{} START\n'.format(ControlProtocol.VERSION))
 
     def test_wrongversion(self):
         self.proto.dataReceived('X START\n')
         self.assertEqual(self.tr.value(), 'NOK')
 
     def test_invalidcmd(self):
-        self.proto.dataReceived('0 WRONG\n')
+        self.proto.dataReceived('{} WRONG\n'.format(ControlProtocol.VERSION))
         self.assertEqual(self.tr.value(), 'NOK')
 
     def test_stop(self):
-        self.assertRaises(NotImplementedError, self.proto.dataReceived, '0 STOP\n')
+        self.assertRaises(NotImplementedError, self.proto.dataReceived, '{} STOP\n'.format(ControlProtocol.VERSION))
 
 if __name__ == "__main__":
 	unittest.main()
