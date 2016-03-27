@@ -13,9 +13,9 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
     def connectionMade(self):
         self.is_running = True
         self.pid = self.transport.pid
-        filename = os.path.join(self.path, "{}-{}.ERROR".format(self.name, self.pid))
+        filename = os.path.join(self.path, "{}-{}-{}.ERROR".format(self.name, time.strftime("%Y%m%d%H%M", time.gmtime()), self.pid))
         self.filestderr = open(filename, 'w')
-        filename = os.path.join(self.path, "{}-{}.INFO".format(self.name, self.pid))
+        filename = os.path.join(self.path, "{}-{}-{}.INFO".format(self.name, time.strftime("%Y%m%d%H%M", time.gmtime()), self.pid))
         self.filestdout = open(filename, 'w')
         log.msg("Started {}({})".format(self.name, self.transport.pid))
         log.msg("  Writing stderr to {}".format(self.filestderr.name))
