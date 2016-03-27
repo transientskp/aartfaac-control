@@ -158,7 +158,7 @@ class WorkerService(Service):
                 msg += "  " + host[3] + "\n"
                 c.close()
 
-            time.sleep(2)
+            time.sleep(5)
 
             # START all processes
             for host in hosts:

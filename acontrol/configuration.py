@@ -98,7 +98,7 @@ class Configuration(object):
     def server(self, obs):
         cfg = self._config["programs"]["server"]
         address = cfg["address"].split(':')
-        default_args = {"buffer-max-size":58*1024**3, "input-host":"10.195.100.3", "input-port-start":4100}
+        default_args = {"buffer-max-size":60*1024**3/7, "input-host":"10.195.100.3", "input-port-start":4100}
         args = self.merge(cfg["args"], default_args)
         subbands = copy.deepcopy(self._config["lba"]["subbands"])
         subbands.remove(self._config["programs"]["atv"]["subband"])
