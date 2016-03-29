@@ -18,7 +18,7 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
         self.filestderr = open(filename, 'w')
         filename = os.path.join(self.path, "{}-{}-{}.INFO".format(self.name, time.strftime("%Y%m%d%H%M", time.gmtime()), self.pid))
         self.filestdout = open(filename, 'w')
-        log.msg("Started {}({})".format(self.name, self.transport.pid))
+        log.msg("Started {}({})".format(self.name, self.pid))
         log.msg("  Writing stderr to {}".format(self.filestderr.name))
         log.msg("  Writing stdout to {}".format(self.filestdout.name))
 
