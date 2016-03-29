@@ -59,7 +59,7 @@ class ConfigurationTestCase(TestWithConfig):
 
     def test_atv(self):
         cmd = self.config.atv(self.obs)
-        self.assertEqual(cmd, ('atv', u'10.144.6.13', 45000, '--antpos=/home/fhuizing/soft/release/share/aartfaac/antennasets/lba_outer.dat --freq=58398437.5 --snapshot=/var/www/html --port=5000 --output=/data/atv'))
+        self.assertEqual(cmd, ('atv', u'10.144.6.13', 45000, '--antpos=/home/fhuizing/soft/release/share/aartfaac/antennasets/lba_outer.dat --freq=58398437.5 --snapshot=/var/www --port=5000 --output=/data/atv'))
 
 
     def test_correlator(self):
