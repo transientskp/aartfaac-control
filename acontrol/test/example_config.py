@@ -36,7 +36,7 @@ EXAMPLE_CONFIG = """
       "subband": 299,
       "args": {
         "output": "\/data\/atv",
-        "snapshot": "\/var\/www\/html",
+        "snapshot": "\/var\/www",
         "port": 5000
       }
     },
