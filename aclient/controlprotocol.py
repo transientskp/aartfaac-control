@@ -11,7 +11,7 @@ class ControlProtocol(basic.LineReceiver):
     def lineReceived(self, line):
         split = line.split()
 
-        if ControlProtocol.VERSION != split[0] or len(split) < 2:
+        if len(split) < 2 or ControlProtocol.VERSION != split[0]:
             log.err("Invalid protocol version")
             self.sendFailure()
             return
@@ -26,10 +26,10 @@ class ControlProtocol(basic.LineReceiver):
             self.sendFailure()
             
     def sendSuccess(self):
-        self.transport.write('OK')
+        self.sendLine('OK')
 
     def sendFailure(self):
-        self.transport.write('NOK')
+        self.sendLine('NOK')
 
     def connectionLost(self, reason):
         log.msg("Disconnected, reason: {}".format(reason.getErrorMessage()))

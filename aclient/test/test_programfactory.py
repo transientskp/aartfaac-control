@@ -17,11 +17,11 @@ class ProgramFactoryTestCase(unittest.TestCase):
 
     def test_wrongversion(self):
         self.proto.dataReceived('X START\n')
-        self.assertEqual(self.tr.value(), 'NOK')
+        self.assertEqual(self.tr.value(), 'NOK\n')
 
     def test_invalidcmd(self):
         self.proto.dataReceived('{} WRONG\n'.format(ControlProtocol.VERSION))
-        self.assertEqual(self.tr.value(), 'NOK')
+        self.assertEqual(self.tr.value(), 'NOK\n')
 
     def test_stop(self):
         self.assertRaises(NotImplementedError, self.proto.dataReceived, '{} STOP\n'.format(ControlProtocol.VERSION))
