@@ -28,101 +28,6 @@ class Parset(dict):
         """Supplement this parset with the contents of filename."""
         self._parse_file(filename)
 
-    def getVector(self, key):
-        """Get the value as a vector of values."""
-        return [self[key]]
-
-    def getRecord(self, key):
-        """Get the value as a record."""
-        return self[key]
-
-    def getBoolVector(self, key, default=None, expandable=False):
-        """
-        Get the value as a list of boolean values.
-
-        key
-          Parameter name
-        default
-          Default value to be used if parameter is undefined.
-          If None is given, an exception is raised if undefined.
-        expandable
-          True = ranges and repeats (.. and *) are expanded first.
-
-        """
-        if expandable:
-            raise NotImplementedError
-        return [bool(self.get(key, default))]
-
-    def getIntVector(self, key, default=None, expandable=False):
-        """
-        Get the value as a list of integer values.
-
-        key
-          Parameter name
-        default
-          Default value to be used if parameter is undefined.
-          If None is given, an exception is raised if undefined.
-        expandable
-          True = ranges and repeats (.. and *) are expanded first.
-
-        """
-        if expandable:
-            raise NotImplementedError
-        return [int(self.get(key, default))]
-
-    def getFloatVector(self, key, default=None, expandable=False):
-        """
-        Get the value as a list of floating point values.
-
-        key
-          Parameter name
-        default
-          Default value to be used if parameter is undefined.
-          If None is given, an exception is raised if undefined.
-        expandable
-          True = ranges and repeats (.. and *) are expanded first.
-        """
-        if expandable:
-            raise NotImplementedError
-        return [float(self.get(key, default))]
-
-    def getDoubleVector(self, key, default=None, expandable=False):
-        """
-        Get the value as a list of floating point values.
-
-        key
-          Parameter name
-        default
-          Default value to be used if parameter is undefined.
-          If None is given, an exception is raised if undefined.
-        expandable
-          True = ranges and repeats (.. and *) are expanded first.
-
-        """
-        if expandable:
-            raise NotImplementedError
-        return [float(self.get(key, default))]
-
-    def getStringVector(self, key, default=None, expandable=False):
-        """
-        Get the value as a list of string values.
-
-        key
-          Parameter name
-        default
-          Default value to be used if parameter is undefined.
-          If None is given, an exception is raised if undefined.
-        expandable
-          True = ranges and repeats (.. and *) are expanded first.
-
-        """
-        if expandable:
-            raise NotImplementedError
-        return [str(self.get(key, default))]
-
-    def fullModuleName(self):
-        raise NotImplementedError
-
     def getBool(self, key, default=None):
         return bool(self.get(key, default))
 
@@ -153,15 +58,6 @@ class Parset(dict):
     def size(self):
         return len(self._data)
 
-    def locateModule(self):
-        raise NotImplementedError
-
-    def subtractSubset(self):
-        raise NotImplementedError
-
-    def version(self):
-        raise NotImplementedError
-
     def writeFile(self, filename):
         file = open(filename, 'w')
         items = self.items()
@@ -169,15 +65,6 @@ class Parset(dict):
         for k,v in items:
           file.write("%s=%s\n" % (k, v))
         file.close()
-
-    def isRecord(self):
-        raise NotImplementedError
-
-    def isVector(self):
-        raise NotImplementedError
-
-    def __reduce__(self):
-        raise NotImplementedError
 
     def getDateTime(self, key, formatstring="%Y-%m-%d %H:%M:%S"):
         """
