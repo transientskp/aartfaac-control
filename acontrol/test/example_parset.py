@@ -18,6 +18,7 @@ Observation.processType=Observation
 Observation.sampleClock=200
 Observation.startTime=2015-02-02 22:47:00
 Observation.stopTime=2015-02-02 23:48:00
+Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed=true
 """
 
 EXAMPLE_PARSET = textwrap.dedent(EXAMPLE_PARSET).strip()
