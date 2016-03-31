@@ -4,14 +4,16 @@ import time, datetime
 import glob
 
 from acontrol.observation import Observation
+from acontrol.controlprotocol import ControlProtocol, ControlFactory
 from acontrol.configuration import Configuration
 from acontrol.mailnotify import MailNotify
-from acontrol.connection import Connection
 from acontrol.test.example_config import EXAMPLE_CONFIG
 
 from twisted.internet import reactor
 from twisted.internet import inotify
 from twisted.internet import protocol
+from twisted.internet import defer
+from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.internet.task import LoopingCall
 from twisted.python import filepath
 from twisted.python import usage
@@ -22,6 +24,7 @@ FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 
+
 def call_at(start_datetime, f, *args, **kwargs):
     """
     Run f(*args, **kwargs) at datetime.
@@ -29,10 +32,10 @@ def call_at(start_datetime, f, *args, **kwargs):
     delta = start_datetime - datetime.datetime.now()
     seconds_ahead = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
     if seconds_ahead > 0:
-        print "AARTFAAC config update in %d seconds" % (seconds_ahead,)
+        log.msg("AARTFAAC config update in %d seconds" % (seconds_ahead))
         return reactor.callLater(seconds_ahead, f, *args, **kwargs)
     else:
-        print "Not scheduling; config is in the past"
+        log.msg("Not scheduling; config is in the past")
     return None
 
 
@@ -44,14 +47,18 @@ def call_at_to(start_datetime, end_datetime, f, *args, **kwargs):
     seconds_ahead = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
     delta = end_datetime - datetime.datetime.now()
     seconds_before_end = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
-    if seconds_ahead > 0:
-        print "Will call in %d seconds" % (seconds_ahead,)
+    delta = end_datetime - start_datetime
+    seconds_duration = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
+
+    if seconds_ahead > 0 and seconds_duration > FIVE_MINUTES:
+        log.msg("Will call in %d seconds" % (seconds_ahead))
         return reactor.callLater(seconds_ahead, f, *args, **kwargs)
     elif seconds_before_end > FIVE_MINUTES:
-        print "Obs in progress, starting now!"
+        log.msg("Obs in progress, starting now!")
         return reactor.callWhenRunning(f, *args, **kwargs)
     else:
-        print "Not scheduling; target is in the past"
+        log.msg("Not scheduling; Obs in the past or too short")
+
     return None
 
 
@@ -86,16 +93,16 @@ class WorkerService(Service):
     PRUNE_TIME = 10  # Prune observations that are finished every N seconds
 
 
-    def __init__(self, config, email):
+    def __init__(self, options, email, config=EXAMPLE_CONFIG):
         self._available = False
         self._parsets = {}
         self._configs = {}
         self._prune_call = LoopingCall(self.prune)
-        self._fnpattern = config['lofar-pattern']
-        self._aapattern = config['config-pattern']
+        self._fnpattern = options['lofar-pattern']
+        self._aapattern = options['config-pattern']
         self._email = email
-        self._cfg_file = open(config['config-dir'] + '/AARTFAAC:000000.json', 'w')
-        self._cfg_file.write(EXAMPLE_CONFIG)
+        self._cfg_file = open(options['config-dir'] + '/AARTFAAC:000000.json', 'w')
+        self._cfg_file.write(config)
         self._cfg_file.seek(0)
         self._activeconfig = Configuration(self._cfg_file.name)
 
@@ -117,92 +124,45 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self._available and obs.is_valid():
-            msg = ""
-            success = True
+            log.msg("Using aartfaac configuration `%s' (see attachment)\n" % (self._activeconfig.filepath))
+            filenames = [obs.filepath, self._activeconfig.filepath]
 
-            if not self._activeconfig:
-                msg += "No aartfaac configuration loaded\n"
-                success = False
-            elif not self._activeconfig.is_valid():
-                msg += "Invalid aartfaac configuration\n"
-                success = False
+            def connect(host, port, name, argv, d):
+                f = ControlFactory(name, argv, d)
+                reactor.connectTCP(host, port, f)
 
-            hosts = []
-            if success:
-                msg += "Using aartfaac configuration `%s'\n" % (self._activeconfig.filepath)
-                # TODO: Implement setstations()
-                # self._activeconfig.setstations(obs)
-                hosts.append(self._activeconfig.atv(obs))
-                hosts.append(self._activeconfig.server(obs))
-                hosts += self._activeconfig.pipelines(obs)
-                hosts.append(self._activeconfig.correlator(obs))
+            dpipeline = defer.Deferred()
+            datv = defer.Deferred()
+            dserver = defer.Deferred()
+            dcorrelator = defer.Deferred()
 
-            # STOP all running processes
-            for host in hosts:
-                c = Connection()
+            def pipeline((name, success)):
+                if success:
+                    log.msg("  %s started successfully" % (name))
+                    connect('localhost', 5002, 'pipeline', '-h', dpipeline)
+                else:
+                    log.msg("  %s failed to start" % (name))
+                
+            def correlator(r):
+                connect('localhost', 5003, 'correlator', '-h', dcorrelator)
 
-                # Try to connect
-                if c.connect(host[1], host[2]) != Connection.OK:
-                    msg += "Unable to connect to `%s:%i'" % (host[1], host[2])
-                    success = False
-                    c.close()
-                    break
+            def response((name, success)):
+                if success:
+                    log.msg("  %s started successfully" % (name))
+                else:
+                    log.msg("  %s failed to start" % (name))
 
-                # First we stop a previous pipeline run, if existing...
-                response = c.send("0 STOP\n")
-                if response != Connection.OK:
-                    msg += "Got `%s' when trying to terminate `%s'\n" % (response, host[0])
+            datv.addCallback(response)
+            dserver.addCallback(pipeline)
+            dpipeline.addCallback(response)
+            dcorrelator.addCallback(response)
+            dlist = defer.gatherResults([dserver, datv], consumeErrors=True)
+            dlist.addCallback(correlator)
 
-                msg += "Connected to %s:%d\n" % (host[1], host[2])
-                msg += "Terminated `%s' successfully with arguments:\n" % (host[0])
-                msg += "  " + host[3] + "\n"
-                c.close()
-
-            time.sleep(5)
-
-            # START all processes
-            for host in hosts:
-                c = Connection()
-
-                # Try to connect
-                if c.connect(host[1], host[2]) != Connection.OK:
-                    msg += "Unable to connect to `%s:%i'" % (host[1], host[2])
-                    success = False
-                    c.close()
-                    break
-
-                # Now we (re) start this process
-                response = c.send("0 START " + host[3] + "\n")
-                if response != Connection.OK:
-                    msg += "Got `%s' when trying to execute `%s' with arguments:\n" % (response, host[0])
-                    msg += "  " + host[3] + "\n"
-                    success = False
-                    c.close()
-                    break
-
-                msg += "Connected to %s:%d\n" % (host[1], host[2])
-                msg += "Executed `%s' successfully with arguments:\n" % (host[0])
-                msg += "  " + host[3] + "\n"
-                c.close()
-
-            # Next we start the new pipeline run given the observation
-            subject = "[-] %s" % (obs)
-            if success:
-                msg += "All processes started successfully\n"
-                subject = "[+] %s" % (obs)
-                print "Starting", obs
-            else:
-                print "Failure when initiating", obs
-
-            print "Log:\n\n\n",msg,"\n\n"
-
-            # Finally we send an email notifying people about the run
-            filenames = [obs.filepath]
-            if self._activeconfig:
-                filenames.append(self._activeconfig.filepath)
-            self._email.send(subject, msg, filenames)
+            connect('localhost', 5000, 'atv', '-h', datv)
+            connect('localhost', 5001, 'server', '-h', dserver)
         else:
-            print "Skipping", obs
+            log.msg("Skipping %s" % (obs))
 
 
     def enqueueObservation(self, ignored, filepath, mask):
@@ -220,22 +180,27 @@ class WorkerService(Service):
             )
 
         if call and filepath.path in self._parsets and self._parsets[filepath.path].active():
-            print "Rescheduling observation", filepath.path
+            log.msg("Rescheduling observation %s" % (filepath.path))
             self._parsets[filepath.path].cancel()
             self._parsets[filepath.path] = call
         elif call and filepath.path not in self._parsets:
-            print "Scheduling observation", filepath.path
+            log.msg("Scheduling observation %s" % (filepath.path))
             self._parsets[filepath.path] = call
         else:
-            print "Ignoring ", filepath.path
+            log.msg("Ignoring %s" %(filepath.path))
 
 
     def applyConfiguration(self, config):
         """
         Prepare AARTFAAC telescope for upcomming observations
         """
-        self._activeconfig = config
-        print "Set AARTFAAC configuration to", config
+        if config.is_valid():
+            self._activeconfig = config
+            # TODO: Implement setstations()
+            # self._activeconfig.setstations(obs)
+            log.msg("Set AARTFAAC configuration to %s" % (config))
+        else:
+            log.msg("Invalid config: %s" % config)
 
 
     def enqueueConfiguration(self, ignored, filepath, mask):
@@ -252,14 +217,14 @@ class WorkerService(Service):
             )
 
         if call and filepath.path in self._configs and self._configs[filepath.path].active():
-            print "Rescheduling config update", filepath.path
+            log.msg("Rescheduling config update %s" % (filepath.path))
             self._configs[filepath.path].cancel()
             self._configs[filepath.path] = call
         elif call and filepath.path not in self._configs:
-            print "Scheduling config update", filepath.path
+            log.msg("Scheduling config update %s" % (filepath.path))
             self._configs[filepath.path] = call
         else:
-            print "Ignoring config update", filepath.path
+            log.msg("Ignoring config update %s" % (filepath.path))
 
 
     def prune(self):
@@ -272,7 +237,7 @@ class WorkerService(Service):
                 pruneable.append(k)
         for k in pruneable:
             del self._parsets[k]
-        print "Tracking %d observations, pruned %d" % (len(self._parsets), len(pruneable))
+        log.msg("Tracking %d observations, pruned %d" % (len(self._parsets), len(pruneable)))
 
         pruneable = []
         for k, v in self._configs.iteritems():
@@ -280,19 +245,19 @@ class WorkerService(Service):
                 pruneable.append(k)
         for k in pruneable:
             del self._configs[k]
-        print "Tracking %d configurations, pruned %d" % (len(self._configs), len(pruneable))
+        log.msg("Tracking %d configurations, pruned %d" % (len(self._configs), len(pruneable)))
 
 
-def makeService(config):
+def makeService(options):
     acontrol_service = MultiService()
-    email = MailNotify(config['maillist'])
+    email = MailNotify(options['maillist'], True)
     log.addObserver(email.error)
-    worker_service = WorkerService(config, email)
+    worker_service = WorkerService(options, email)
     worker_service.setName("Worker")
     worker_service.setServiceParent(acontrol_service)
 
     # Slurp up any existing configs
-    for file in glob.glob(os.path.join(config['config-dir'], config['config-pattern'])):
+    for file in glob.glob(os.path.join(options['config-dir'], options['config-pattern'])):
         reactor.callWhenRunning(
         worker_service.enqueueConfiguration,
             None, filepath.FilePath(file), None
@@ -301,7 +266,7 @@ def makeService(config):
     # We notify on a file that has been closed in writemode as files are copied
     # over scp, it can take some time for the full file to arrive
     aartfaac_config_service = NotifyService(
-        filepath.FilePath(config['config-dir']),
+        filepath.FilePath(options['config-dir']),
         mask=inotify.IN_CLOSE_WRITE,
         callbacks=[worker_service.enqueueConfiguration]
     )
@@ -309,7 +274,7 @@ def makeService(config):
     aartfaac_config_service.setServiceParent(acontrol_service)
 
     # Slurp up any existing parsets
-    for file in glob.glob(os.path.join(config['lofar-dir'], config['lofar-pattern'])):
+    for file in glob.glob(os.path.join(options['lofar-dir'], options['lofar-pattern'])):
         reactor.callWhenRunning(
         worker_service.enqueueObservation,
             None, filepath.FilePath(file), None
@@ -318,11 +283,11 @@ def makeService(config):
     # We notify on a file that has been closed in writemode as files are copied
     # over scp, it can take some time for the full file to arrive
     lofar_parset_service = NotifyService(
-        filepath.FilePath(config['lofar-dir']),
+        filepath.FilePath(options['lofar-dir']),
         mask=inotify.IN_CLOSE_WRITE,
         callbacks=[worker_service.enqueueObservation]
     )
-    lofar_parset_service.setName("LOFAR Notifier")
+    lofar_parset_service.setName("LOFAR Parset Notifier")
     lofar_parset_service.setServiceParent(acontrol_service)
 
     return acontrol_service
