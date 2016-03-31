@@ -1,3 +1,4 @@
+from twisted.internet import protocol
 from twisted.protocols import basic
 from twisted.python import log
 
@@ -42,3 +43,11 @@ class ControlProtocol(basic.LineReceiver):
 
     def stop(self):
         raise NotImplementedError
+
+
+
+class ControlFactory(protocol.ServerFactory):
+    """Our own program factory that allows us to pass config"""
+    def __init__(self, config):
+        self.config = config
+

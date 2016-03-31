@@ -1,12 +1,13 @@
 from twisted.test import proto_helpers
 from twisted.trial import unittest
 
-from aclient.service import ProgramFactory
-from aclient.controlprotocol import ControlProtocol
+from aclient.service import Options
+from aclient.controlprotocol import ControlProtocol, ControlFactory
 
-class ProgramFactoryTestCase(unittest.TestCase):
+class ControlTestCase(unittest.TestCase):
     def setUp(self):
-        factory = ProgramFactory({'logdir':'/tmp'})
+        self.options = Options()
+        factory = ControlFactory(self.options)
         factory.protocol = ControlProtocol
         self.proto = factory.buildProtocol(('127.0.0.1', 0))
         self.tr = proto_helpers.StringTransport()
@@ -25,6 +26,7 @@ class ProgramFactoryTestCase(unittest.TestCase):
 
     def test_stop(self):
         self.assertRaises(NotImplementedError, self.proto.dataReceived, '{} STOP\n'.format(ControlProtocol.VERSION))
+
 
 if __name__ == "__main__":
 	unittest.main()
