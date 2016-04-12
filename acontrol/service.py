@@ -25,6 +25,13 @@ SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 
 
+def connect(host, port, name, argv, start):
+    d = defer.Deferred()
+    f = ControlFactory(name, argv, d, start)
+    reactor.connectTCP(host, port, f)
+    return d
+
+
 def call_at(start_datetime, f, *args, **kwargs):
     """
     Run f(*args, **kwargs) at datetime.
@@ -70,7 +77,6 @@ class Options(usage.Options):
         ["config-pattern", None, "AARTFAAC*", "Glob aartfaac pattern to select usable parsets"],
         ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
-
 
 class NotifyService(Service):
     """
@@ -124,43 +130,8 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self._available and obs.is_valid():
-            log.msg("Using aartfaac configuration `%s' (see attachment)\n" % (self._activeconfig.filepath))
-            filenames = [obs.filepath, self._activeconfig.filepath]
-
-            def connect(host, port, name, argv, d):
-                f = ControlFactory(name, argv, d)
-                reactor.connectTCP(host, port, f)
-
-            dpipeline = defer.Deferred()
-            datv = defer.Deferred()
-            dserver = defer.Deferred()
-            dcorrelator = defer.Deferred()
-
-            def pipeline((name, success)):
-                if success:
-                    log.msg("  %s started successfully" % (name))
-                    connect('localhost', 5002, 'pipeline', '-h', dpipeline)
-                else:
-                    log.msg("  %s failed to start" % (name))
-                
-            def correlator(r):
-                connect('localhost', 5003, 'correlator', '-h', dcorrelator)
-
-            def response((name, success)):
-                if success:
-                    log.msg("  %s started successfully" % (name))
-                else:
-                    log.msg("  %s failed to start" % (name))
-
-            datv.addCallback(response)
-            dserver.addCallback(pipeline)
-            dpipeline.addCallback(response)
-            dcorrelator.addCallback(response)
-            dlist = defer.gatherResults([dserver, datv], consumeErrors=True)
-            dlist.addCallback(correlator)
-
-            connect('localhost', 5000, 'atv', '-h', datv)
-            connect('localhost', 5001, 'server', '-h', dserver)
+            atv = connect('127.0.0.1', 5000, 'atv', '-h', True)
+            server = connect('127.0.0.1', 6000, 'server', '-h', True)
         else:
             log.msg("Skipping %s" % (obs))
 

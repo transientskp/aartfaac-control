@@ -72,7 +72,7 @@ class Configuration(object):
         return ("atv", address[0], int(address[1]), cmd)
 
 
-    def correlator(self, obs):
+    def correlators(self, obs):
         cfg = self._config["programs"]["correlator"]
         default_args = {"p":1, "n":288, "t":768, "c":256, "C":63, "m":9, "d":0, "g":"0-9", "b":16, "s":8, "r":0, "N":"4-11,28-35/16-23,40-47", "A":"0:6", "O":"0:4,1:4", "i":"10.195.100.3:53268,10.195.100.3:53276,10.195.100.3:53284,10.195.100.3:53292,10.195.100.3:53300,10.195.100.3:53308"}
         args = self.merge(cfg["args"], default_args)
