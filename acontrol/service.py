@@ -25,7 +25,7 @@ SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 
 
-def connect(host, port, name, argv, start):
+def connect(name, host, port, argv, start):
     d = defer.Deferred()
     f = ControlFactory(name, argv, d, start)
     reactor.connectTCP(host, port, f)
@@ -130,8 +130,22 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self._available and obs.is_valid():
-            atv = connect('127.0.0.1', 5000, 'atv', '-h', True)
-            server = connect('127.0.0.1', 6000, 'server', '-h', True)
+            def start_clients(result, V):
+                if not result:
+                    return (False, "Failed to start server")
+                l = [connect(*v, start=True) for v in V]
+                return defer.DeferredList(l, fireOnOneCallback=True, consumeErrors=True)
+
+            def success(result):
+                log.msg(result)
+
+            atv = connect(*self._activeconfig.atv(obs), start=True)
+            server = connect(*self._activeconfig.server(obs), start=True)
+            correlator = defer.DeferredList([atv,server], consumeErrors=True)
+            server.addCallback(start_clients, self._activeconfig.pipelines(obs))
+            correlator.addCallback(start_clients, [self._activeconfig.correlator(obs)])
+            result = defer.DeferredList([server,correlator], consumeErrors=True)
+            result.addCallback(success)
         else:
             log.msg("Skipping %s" % (obs))
 
