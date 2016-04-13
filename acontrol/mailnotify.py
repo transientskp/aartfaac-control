@@ -17,12 +17,13 @@ from email.MIMEText import MIMEText
 COMMASPACE = ', '
 class MailNotify:
     FROM = "acontrol@mcu001.control.lofar"
-    def __init__(self, mail_file='maillist.txt'):
+    def __init__(self, mail_file='maillist.txt', dryrun=False):
         self._mail_file = mail_file
         self._mail_regex = re.compile(r'[^@]+@[^@]+\.[^@]+')
+        self.dryrun = dryrun
 
 
-    def send(self, subject, body, files=None, server="127.0.0.1", dryrun=False):
+    def send(self, subject, body, files=None, server="127.0.0.1"):
         """
         Sends a standard email with a subject, body and potential attachments
         """
@@ -50,7 +51,7 @@ class MailNotify:
             msg.attach(part)
             zipped.close()
 
-        if not dryrun:
+        if not self.dryrun:
             smtp = smtplib.SMTP(server)
             smtp.sendmail(MailNotify.FROM, maillist, msg.as_string())
             smtp.close()
@@ -61,10 +62,9 @@ class MailNotify:
         We hook this method to the twisted log such that we get the error dict
         See http://twistedmatrix.com/documents/11.1.0/core/howto/logging.html#auto4
         """
-        if msg['isError']:
-          if msg.has_key('failure'):
+        if msg.has_key('failure'):
             self.send("Processing Error", msg['failure'].getErrorMessage())
-          else:
+        else:
             self.send("Processing Error", str(msg))
 
 

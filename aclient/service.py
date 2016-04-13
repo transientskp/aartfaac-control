@@ -1,7 +1,6 @@
 import os
 import sys
 
-from twisted.internet import protocol
 from twisted.python import usage
 from twisted.application import internet
 
@@ -9,6 +8,7 @@ from aclient.correlatorprotocol import CorrelatorProtocol
 from aclient.serverprotocol import ServerProtocol
 from aclient.pipelineprotocol import PipelineProtocol
 from aclient.atvprotocol import AtvProtocol
+from aclient.controlprotocol import ControlFactory
 
 PROTOCOLS = {
     "server":ServerProtocol, 
@@ -17,12 +17,6 @@ PROTOCOLS = {
     "atv":AtvProtocol
 }
 
-
-
-class ProgramFactory(protocol.ServerFactory):
-    """Our own program factory that allows us to pass config"""
-    def __init__(self, config):
-        self.config = config
 
 
 class Options(usage.Options):
@@ -41,7 +35,7 @@ def makeService(config):
     if not os.path.exists(config['logdir']):
         os.makedirs(config['logdir'])
 
-    factory = ProgramFactory(config)
+    factory = ControlFactory(config)
     factory.protocol = PROTOCOLS[config['program'].lower()]
     service = internet.TCPServer(config['port'], factory)
     return service

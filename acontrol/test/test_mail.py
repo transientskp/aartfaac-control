@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+import smtplib
 import os
 
 from acontrol.mailnotify import MailNotify
@@ -15,7 +16,7 @@ class MailNotifyTestCase(unittest.TestCase):
         self.mail_file = tempfile.NamedTemporaryFile(mode='w')
         self.mail_file.write('folkerthuizinga@gmail.com\n')
         self.mail_file.flush()
-        self.email = MailNotify(self.mail_file.name)
+        self.email = MailNotify(self.mail_file.name, dryrun=True)
 
     def tearDown(self):
         self.mail_file.close()
@@ -23,7 +24,7 @@ class MailNotifyTestCase(unittest.TestCase):
         self.file2.close()
 
     def test_mail(self):
-        self.email.send("test", "acontrol unittest", files=[self.file1.name, self.file2.name], dryrun=True)
+        self.email.send("test", "acontrol unittest", files=[self.file1.name, self.file2.name])
 
 if __name__ == "__main__":
     unittest.main()
