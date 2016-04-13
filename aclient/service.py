@@ -29,8 +29,7 @@ class Options(usage.Options):
 
 def makeService(config):
     if config['program'] not in PROTOCOLS.keys():
-        sys.stderr.write("Error: '{}' not a valid program\n".format(config['program']))
-        sys.exit(1)
+        raise Exception("'{}' not a valid program\n".format(config['program']))
 
     if not os.path.exists(config['logdir']):
         os.makedirs(config['logdir'])

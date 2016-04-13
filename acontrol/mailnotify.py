@@ -13,6 +13,8 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEImage import MIMEImage
 from email.MIMEText import MIMEText
 
+g_email_bdy = ""
+g_email_hdr = ""
 
 COMMASPACE = ', '
 class MailNotify:

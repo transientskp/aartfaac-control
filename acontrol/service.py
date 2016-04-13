@@ -6,7 +6,7 @@ import glob
 from acontrol.observation import Observation
 from acontrol.controlprotocol import ControlProtocol, ControlFactory
 from acontrol.configuration import Configuration
-from acontrol.mailnotify import MailNotify
+from acontrol.mailnotify import *
 from acontrol.test.example_config import EXAMPLE_CONFIG
 
 from twisted.internet import reactor
@@ -23,7 +23,6 @@ from twisted.application.service import Service, MultiService
 FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
-
 
 def connect(name, host, port, argv, start):
     d = defer.Deferred()
@@ -125,22 +124,36 @@ class WorkerService(Service):
         self._cfg_file.close()
 
 
-    def processObservation(self, obs):
+    def processObservation(self, obs, connector=connect):
         """
         Start a pipeline to process the observation
         """
         if self._available and obs.is_valid():
+            global g_email_bdy
+            g_email_bdy = "Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath)
+
             def start_clients(result, V):
                 if not result:
-                    return (False, "Failed to start server")
-                l = [connect(*v, start=True) for v in V]
+                    return False
+                l = [connector(*v, start=True) for v in V]
                 return defer.DeferredList(l, fireOnOneCallback=True, consumeErrors=True)
 
             def success(result):
-                log.msg(result)
+                global g_email_hdr, g_email_bdy
+                s = True
+                for v in result:
+                    s = s and v[1][0]
 
-            atv = connect(*self._activeconfig.atv(obs), start=True)
-            server = connect(*self._activeconfig.server(obs), start=True)
+                if s:
+                    g_email_hdr = "[+] %s" % (obs)
+                else:
+                    g_email_hdr = "[-] %s" % (obs)
+
+                reactor.callLater(10, self._email.send, g_email_hdr, g_email_bdy, [obs.filepath, self._activeconfig.filepath])
+
+
+            atv = connector(*self._activeconfig.atv(obs), start=True)
+            server = connector(*self._activeconfig.server(obs), start=True)
             correlator = defer.DeferredList([atv,server], consumeErrors=True)
             server.addCallback(start_clients, self._activeconfig.pipelines(obs))
             correlator.addCallback(start_clients, [self._activeconfig.correlator(obs)])
