@@ -112,7 +112,7 @@ class Configuration(object):
         a = self._config["lba"]["channels"][0::2]
         b = self._config["lba"]["channels"][1::2]
         cmd += " " + ",".join(["%i-%i" % (t[0],t[1]) for t in zip(a,b)])
-        return ("imaging-server", address[0], int(address[1]), cmd)
+        return ("server", address[0], int(address[1]), cmd)
 
 
     def pipelines(self, obs):
@@ -124,11 +124,13 @@ class Configuration(object):
         pipelines = []
 
         if obs.antenna_set.lower() in self._config["lba"]["modes"]:
+            i = 0
             for addr in cfg["address"]:
                 args["casa"] = "/data/%s" % (obs.start_time.strftime("%Y%m%d-%H%M"))
                 cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
                 a = addr.split(':')
-                pipelines.append(("imaging-pipeline", a[0], int(a[1]), cmd))
+                pipelines.append(("pipeline-%d" % (i), a[0], int(a[1]), cmd))
+                i+=1
         else:
             raise NotImplementedError
 

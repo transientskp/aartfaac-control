@@ -133,16 +133,21 @@ class WorkerService(Service):
             g_email_bdy = "Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath)
 
             def start_clients(result, V):
-                if not result:
-                    return False
+                for v in result:
+                    if type(v) == tuple and not v[0]:
+                        return None
+
                 l = [connector(*v, start=True) for v in V]
                 return defer.DeferredList(l, fireOnOneCallback=True, consumeErrors=True)
 
             def success(result):
                 global g_email_hdr, g_email_bdy
+
                 s = True
                 for v in result:
-                    s = s and v[1][0]
+                    if type(v) == tuple and not v[0]:
+                        s = False
+                        break
 
                 if s:
                     g_email_hdr = "[+] %s" % (obs)
