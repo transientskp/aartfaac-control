@@ -76,6 +76,7 @@ class Options(usage.Options):
         ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
+
 class NotifyService(Service):
     """
     Watch for events on @path@ according to @mask@ and run @callbacks@ as

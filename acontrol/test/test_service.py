@@ -108,9 +108,20 @@ class ServiceTestCase(unittest.TestCase):
             self.assertTrue(service.namedServices.has_key(service_name))
 
     def test_process_obs(self):
+        
+        def conn_pass(name, host, port, argv, start):
+            conn_pass.counter += 1
+            d = defer.Deferred()
+            d.callback("success")
+            return d
+        conn_pass.counter = 0
+
         email = MailNotify(self.config['maillist'], True)
         ws = WorkerService(self.config, email, LOCAL_CONFIG)
-        return ws.processObservation(self.obs)
+        ws.startService()
+        ws.processObservation(self.obs, connector=conn_pass)
+        ws.stopService()
+        self.assertEqual(conn_pass.counter, 6)
 
     def tearDown(self):
         for call in reactor.getDelayedCalls():
