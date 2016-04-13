@@ -2,11 +2,11 @@
 AARTFAAC Control System
 =======================
 
-.. image:: https://travis-ci.com/transientskp/aartfaac-control.svg?token=JM8FL3pgLyGt38ces8j4&branch=master
-    :target: https://travis-ci.com/transientskp/aartfaac-control
+.. image:: https://travis-ci.org/transientskp/aartfaac-control.svg?branch=master
+    :target: https://travis-ci.org/transientskp/aartfaac-control
 .. image:: https://coveralls.io/repos/github/transientskp/aartfaac-control/badge.svg?branch=master 
     :target: https://coveralls.io/github/transientskp/aartfaac-control?branch=master
-
+    
 The control system is a daemon which runs on the LOFAR Main Control Unit
 (MCU). It watches for new parsets which describe upcoming observations and
 extracts relevant details. It maintains a queue of upcoming observations, and,
