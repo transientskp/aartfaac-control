@@ -1,10 +1,12 @@
 import textwrap
+import shutil
 import tempfile
 import os
 
 from twisted.trial import unittest
 from twisted.python import usage
 from twisted.internet import reactor
+from twisted.test import proto_helpers
 
 from acontrol.controlprotocol import ControlProtocol, ControlFactory
 from acontrol.test.example_parset import EXAMPLE_PARSET
@@ -109,8 +111,9 @@ class ServiceTestCase(unittest.TestCase):
         email = MailNotify(self.config['maillist'], True)
         ws = WorkerService(self.config, email, LOCAL_CONFIG)
         return ws.processObservation(self.obs)
-        
 
     def tearDown(self):
         for call in reactor.getDelayedCalls():
             call.cancel()
+        shutil.rmtree(self.cfg_dir)
+        shutil.rmtree(self.lof_dir)
