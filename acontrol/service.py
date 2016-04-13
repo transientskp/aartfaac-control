@@ -13,7 +13,6 @@ from twisted.internet import reactor
 from twisted.internet import inotify
 from twisted.internet import protocol
 from twisted.internet import defer
-from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.internet.task import LoopingCall
 from twisted.python import filepath
 from twisted.python import usage
