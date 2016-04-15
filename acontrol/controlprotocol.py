@@ -25,14 +25,16 @@ class ControlProtocol(basic.LineReceiver):
 
 
     def lineReceived(self, line):
-        global g_email_bdy
         split = line.split()
+        if len(split) == 1:
+            split.append("")
+        status = " ".join(split[1:])
 
         if split[0] == "OK":
-            g_email_bdy += "    [+] <%s> with argv '%s'\n" % (self.factory.name.upper(), self.factory.argv)
+            mlog.i(self.factory.name, status, self.factory.argv)
             self.factory.defer.callback("Started %s" % (self.factory.name))
         elif split[0] == "NOK":
-            g_email_bdy += "    [-] <%s> with argv '%s'\n" % (self.factory.name.upper(), self.factory.argv)
+            mlog.e(self.factory.name, status, self.factory.argv)
             self.factory.defer.errback(Exception("Failed to start %s" % (self.factory.name)))
         else:
             self.factory.defer.errback(Exception("Invalid status"))
@@ -69,15 +71,10 @@ class ControlFactory(protocol.ClientFactory):
 
 
     def clientConnectionLost(self, connector, reason):
-        global g_email_bdy
-        g_email_bdy += "    [-] <%s> connection lost, reason: '%s'\n" % (self.name.upper(), reason)
         log.err("Connection lost, reason: %s" % reason)
-        self.defer.errback(Exception("Lost connection (%s)" % (self.name)))
 
 
     def clientConnectionFailed(self, connector, reason):
-        global g_email_bdy
-        g_email_bdy += "    [-] <%s> connection failed, reason: '%s'\n" % (self.name.upper(), reason)
+        mlog.e(self.name, reason, self.argv)
         log.err("Connection failed, reason: %s" % reason)
-        self.defer.errback(Exception("Failed to connect (%s)" % (self.name)))
 

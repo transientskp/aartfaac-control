@@ -5,6 +5,7 @@ import zipfile
 from os.path import basename
 import mimetypes
 
+from twisted.python import log
 from email import Encoders
 from email.Message import Message
 from email.MIMEAudio import MIMEAudio
@@ -13,8 +14,6 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEImage import MIMEImage
 from email.MIMEText import MIMEText
 
-g_email_bdy = ""
-g_email_hdr = ""
 
 COMMASPACE = ', '
 class MailNotify:
@@ -57,6 +56,8 @@ class MailNotify:
             smtp = smtplib.SMTP(server)
             smtp.sendmail(MailNotify.FROM, maillist, msg.as_string())
             smtp.close()
+        else:
+            log.msg("\n\nSubject: %s\n\n%s\n\n" % (subject, body))
 
 
     def error(self, msg):
@@ -72,3 +73,56 @@ class MailNotify:
 
     def address(self, addr):
         return self._mail_regex.match(addr)
+
+
+
+class MailLog:
+    def __init__(self):
+        self._lines = []
+
+    def _generate(self, t, name, msg, argv):
+        s = "    [-] "
+        if t:
+            s = "    [+] "
+
+        a = argv.split()
+        prefix = ""
+        for c in a[0]:
+            if c.isalnum():
+                break
+            prefix += c
+
+        args = "        "
+        for w in a:
+            if w.startswith(prefix):
+                args += "\n        " + w
+            else:
+                args += " " + w
+
+        s += name.upper() + " " + msg + args + "\n"
+        return s
+
+
+    def i(self, name, msg, argv):
+        s = self._generate(True, name, msg, argv)
+        self._lines.append(s)
+
+
+    def e(self, name, msg, argv):
+        s = self._generate(False, name, msg, argv)
+        self._lines.append(s)
+
+
+    def m(self, s):
+        self._lines.append(s)
+
+
+    def flush(self):
+        msg = "\n".join(self._lines)
+        del self._lines[:]
+        return msg
+
+try:
+    mlog
+except NameError:
+    mlog = MailLog()

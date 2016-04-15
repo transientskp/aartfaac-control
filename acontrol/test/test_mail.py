@@ -1,9 +1,10 @@
 import unittest
+import textwrap
 import tempfile
 import smtplib
 import os
 
-from acontrol.mailnotify import MailNotify
+from acontrol.mailnotify import *
 
 class MailNotifyTestCase(unittest.TestCase):
     def setUp(self):
@@ -25,6 +26,12 @@ class MailNotifyTestCase(unittest.TestCase):
 
     def test_mail(self):
         self.email.send("test", "acontrol unittest", files=[self.file1.name, self.file2.name])
+
+    def test_layout(self):
+        mlog.m("subject\n")
+        mlog.i("a", "x", "-x 1 -y 2")
+        mlog.e("b", "x", "-x 1 -y 2")
+        self.assertEqual('    [-] TEST         \n        --help\n\n    [+] TEST         \n        --help\n\n    [+] TEST         \n        --help\n\nsubject\n\n    [+] A x        \n        -x 1\n        -y 2\n\n    [-] B x        \n        -x 1\n        -y 2\n', mlog.flush())
 
 if __name__ == "__main__":
     unittest.main()

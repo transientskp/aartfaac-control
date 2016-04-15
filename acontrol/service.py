@@ -129,8 +129,7 @@ class WorkerService(Service):
         Start a pipeline to process the observation
         """
         if self._available and obs.is_valid():
-            global g_email_bdy
-            g_email_bdy = "Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath)
+            mlog.m("Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath))
 
             def start_clients(result, V):
                 for v in result:
@@ -141,20 +140,17 @@ class WorkerService(Service):
                 return defer.DeferredList(l, fireOnOneCallback=True, consumeErrors=True)
 
             def success(result):
-                global g_email_hdr, g_email_bdy
-
                 s = True
                 for v in result:
                     if type(v) == tuple and not v[0]:
                         s = False
                         break
 
+                header = "[-] %s" % (obs)
                 if s:
-                    g_email_hdr = "[+] %s" % (obs)
-                else:
-                    g_email_hdr = "[-] %s" % (obs)
+                    header = "[+] %s" % (obs)
 
-                reactor.callLater(10, self._email.send, g_email_hdr, g_email_bdy, [obs.filepath, self._activeconfig.filepath])
+                reactor.callLater(10, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
 
             atv = connector(*self._activeconfig.atv(obs), start=True)
@@ -162,7 +158,7 @@ class WorkerService(Service):
             correlator = defer.DeferredList([atv,server], consumeErrors=True)
             server.addCallback(start_clients, self._activeconfig.pipelines(obs))
             correlator.addCallback(start_clients, [self._activeconfig.correlator(obs)])
-            result = defer.DeferredList([server,correlator], consumeErrors=True)
+            result = defer.DeferredList([server, correlator], consumeErrors=True)
             result.addCallback(success)
         else:
             log.msg("Skipping %s" % (obs))
@@ -254,7 +250,7 @@ class WorkerService(Service):
 def makeService(options):
     acontrol_service = MultiService()
     email = MailNotify(options['maillist'], True)
-    log.addObserver(email.error)
+    #log.addObserver(email.error)
     worker_service = WorkerService(options, email)
     worker_service.setName("Worker")
     worker_service.setServiceParent(acontrol_service)
