@@ -128,7 +128,7 @@ class WorkerService(Service):
         """
         Start a pipeline to process the observation
         """
-        if self._available and obs.is_valid():
+        if self._available:
             mlog.m("Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath))
 
             def start_clients(result, V):
@@ -176,22 +176,25 @@ class WorkerService(Service):
         call = None
         if fnmatch.fnmatch(filepath.basename(), self._fnpattern):
             obs = Observation(filepath.path)
+            if not obs.is_valid():
+                log.msg("Invalid %s; ignoring" % (obs))
+                return
+
             call = call_at_to(
                 obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
                 obs.end_time,
                 self.processObservation,
                 obs
             )
+            key = hash(obs)
 
-        if call and filepath.path in self._parsets and self._parsets[filepath.path].active():
-            log.msg("Rescheduling observation %s" % (filepath.path))
-            self._parsets[filepath.path].cancel()
-            self._parsets[filepath.path] = call
-        elif call and filepath.path not in self._parsets:
-            log.msg("Scheduling observation %s" % (filepath.path))
-            self._parsets[filepath.path] = call
+            if key in self._parsets and self._parsets[key].active():
+                log.msg("Already scheduled %s; ignoring" % (obs))
+            elif key not in self._parsets:
+                log.msg("Scheduling observation %s" % (obs))
+                self._parsets[key] = call
         else:
-            log.msg("Ignoring %s" %(filepath.path))
+            log.msg("Ignoring %s" % (filepath.path))
 
 
     def applyConfiguration(self, config):

@@ -33,6 +33,9 @@ class Observation(object):
     def end(self):
         return self.end_time.strftime("%H:%M")
 
+    def __hash__(self):
+        return int(self.start_time.strftime('%Y%m%d%H%M'))
+
     # TODO: Check for aartfaac piggyback flag
     def is_valid(self):
         return self.valid and self.antenna_array == "LBA"
