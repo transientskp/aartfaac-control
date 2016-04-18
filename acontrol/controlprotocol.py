@@ -75,6 +75,7 @@ class ControlFactory(protocol.ClientFactory):
 
 
     def clientConnectionFailed(self, connector, reason):
-        mlog.e(self.name, reason, self.argv)
-        log.err("Connection failed, reason: %s" % reason)
+        mlog.e(self.name, reason.getErrorMessage(), self.argv)
+        self.defer.errback(reason)
+        log.err("Connection failed, reason: %s" % reason.getErrorMessage())
 

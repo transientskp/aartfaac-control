@@ -7,7 +7,7 @@ from acontrol.observation import Observation
 from acontrol.controlprotocol import ControlProtocol, ControlFactory
 from acontrol.configuration import Configuration
 from acontrol.mailnotify import *
-from acontrol.test.example_config import EXAMPLE_CONFIG
+from acontrol.test.example_config import EXAMPLE_CONFIG, LOCAL_CONFIG
 
 from twisted.internet import reactor
 from twisted.internet import inotify
@@ -145,6 +145,11 @@ class WorkerService(Service):
                     if type(v) == tuple and not v[0]:
                         s = False
                         break
+                    if type(v[1]) == list:
+                        for x in v[1]:
+                            if type(x) == tuple and not x[0]:
+                                s = False
+                                break
 
                 header = "[-] %s" % (obs)
                 if s:
@@ -249,7 +254,7 @@ class WorkerService(Service):
 
 def makeService(options):
     acontrol_service = MultiService()
-    email = MailNotify(options['maillist'], True)
+    email = MailNotify(options['maillist'], dryrun=False)
     #log.addObserver(email.error)
     worker_service = WorkerService(options, email)
     worker_service.setName("Worker")
