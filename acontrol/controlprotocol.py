@@ -32,10 +32,10 @@ class ControlProtocol(basic.LineReceiver):
 
         if split[0] == "OK":
             mlog.i(self.factory.name, status, self.factory.argv)
-            self.factory.defer.callback("Started %s" % (self.factory.name))
+            self.factory.defer.callback(status)
         elif split[0] == "NOK":
             mlog.e(self.factory.name, status, self.factory.argv)
-            self.factory.defer.errback(Exception("Failed to start %s" % (self.factory.name)))
+            self.factory.defer.errback(Exception(status))
         else:
             self.factory.defer.errback(Exception("Invalid status"))
 
