@@ -53,9 +53,12 @@ class MailNotify:
             zipped.close()
 
         if not self.dryrun:
-            smtp = smtplib.SMTP(server)
-            smtp.sendmail(MailNotify.FROM, maillist, msg.as_string())
-            smtp.close()
+            try:
+                smtp = smtplib.SMTP(server)
+                smtp.sendmail(MailNotify.FROM, maillist, msg.as_string())
+                smtp.close()
+            except:
+                log.msg("\n\nSubject: %s\n\n%s\n\n" % (subject, body))
         else:
             log.msg("\n\nSubject: %s\n\n%s\n\n" % (subject, body))
 
