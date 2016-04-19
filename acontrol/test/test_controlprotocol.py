@@ -20,7 +20,7 @@ class ControlTestCase(unittest.TestCase):
         self.assertEqual('0 START %s\n' % self.proto.factory.argv, self.tr.value())
 
         def cb(result):
-            self.assertTrue(result)
+            self.assertEqual(type(result), str)
 
         self.d.addCallback(cb)
         self.proto.dataReceived('OK\n')
@@ -31,20 +31,21 @@ class ControlTestCase(unittest.TestCase):
         self.assertEqual('0 STOP\n', self.tr.value())
 
         def cb(result):
-            self.assertTrue(result)
+            self.assertEqual(type(result), str)
 
         self.d.addCallback(cb)
         self.proto.dataReceived('OK\n')
         return self.d
 
     def test_nok(self):
+        msg = 'Invalid'
         self._make_factory(True)
 
         def e(result):
-            self.assertEquals(result.getErrorMessage(), "Failed to start test")
+            self.assertEquals(result.getErrorMessage(), msg)
 
         self.d.addErrback(e)
-        self.proto.dataReceived('NOK\n')
+        self.proto.dataReceived('NOK %s\n' % (msg))
         return self.d
 
 

@@ -31,7 +31,7 @@ class MailNotifyTestCase(unittest.TestCase):
         mlog.m("subject\n")
         mlog.i("a", "x", "-x 1 -y 2")
         mlog.e("b", "x", "-x 1 -y 2")
-        self.assertEqual('    [-] TEST         \n        --help\n\n    [+] TEST         \n        --help\n\n    [+] TEST         \n        --help\n\nsubject\n\n    [+] A x        \n        -x 1\n        -y 2\n\n    [-] B x        \n        -x 1\n        -y 2\n', mlog.flush())
+        self.assertEqual(type(mlog.flush()), str)
 
 if __name__ == "__main__":
     unittest.main()
