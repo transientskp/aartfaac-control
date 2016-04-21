@@ -100,6 +100,25 @@ class ServiceTestCase(unittest.TestCase):
         self.assertEqual(conn_fail.counter, 8)
 
 
+    def test_stop(self):
+        def conn(name, host, port, argv, start):
+            d = defer.Deferred()
+            d.callback("success")
+            conn.counter += 1
+            return d
+        conn.counter = 0
+
+        email = MailNotify(self.config['maillist'], True)
+        ws = WorkerService(self.config, email, EXAMPLE_CONFIG)
+        ws.startService()
+        ws.endObservation(self.obs, connector=conn)
+        ws.stopService()
+        self.assertEqual(conn.counter, 8)
+
+
+
+
+
     def tearDown(self):
         for call in reactor.getDelayedCalls():
             call.cancel()

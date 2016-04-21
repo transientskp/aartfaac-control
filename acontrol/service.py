@@ -37,10 +37,10 @@ def call_at(start_datetime, f, *args, **kwargs):
     delta = start_datetime - datetime.datetime.now()
     seconds_ahead = delta.days * SECONDS_IN_DAY + delta.seconds + delta.microseconds / US_IN_SECOND
     if seconds_ahead > 0:
-        log.msg("AARTFAAC config update in %d seconds" % (seconds_ahead))
+        log.msg("Calling '%s' in %d seconds" % (f.__name__, seconds_ahead))
         return reactor.callLater(seconds_ahead, f, *args, **kwargs)
     else:
-        log.msg("Not scheduling; config is in the past")
+        log.msg("Not scheduling; call '%s' is in the past" % (f.__name__))
     return None
 
 
@@ -124,6 +124,22 @@ class WorkerService(Service):
         self._cfg_file.close()
 
 
+    def endObservation(self, obs, connector=connect):
+        def stop_clients(V):
+            l = [connector(*v, start=False) for v in V]
+            return defer.DeferredList(l, consumeErrors=True)
+
+        def success(result):
+            log.msg("%s" % (result))
+
+        atv = connector(*self._activeconfig.atv(obs), start=False)
+        server = connector(*self._activeconfig.server(obs), start=False)
+        pipelines = stop_clients(self._activeconfig.pipelines(obs))
+        correlator = stop_clients([self._activeconfig.correlator(obs)])
+        result = defer.DeferredList([atv, server, pipelines, correlator], consumeErrors=True)
+        result.addCallback(success)
+        
+
     def processObservation(self, obs, connector=connect):
         """
         Start a pipeline to process the observation
@@ -190,9 +206,10 @@ class WorkerService(Service):
 
             if key in self._parsets and self._parsets[key].active():
                 log.msg("Already scheduled %s; ignoring" % (obs))
-            elif key not in self._parsets:
+            else:
                 log.msg("Scheduling observation %s" % (obs))
                 self._parsets[key] = call
+                call_at(obs.end_time, self.endObservation, obs)
         else:
             log.msg("Ignoring %s" % (filepath.path))
 
