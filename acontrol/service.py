@@ -23,9 +23,15 @@ FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
 US_IN_SECOND = 1e6
 
-def connect(name, host, port, argv, start):
+def start(name, host, port, argv):
     d = defer.Deferred()
-    f = ControlFactory(name, argv, d, start)
+    f = ControlFactory(name, argv, d, True)
+    reactor.connectTCP(host, port, f)
+    return d
+
+def stop(name, host, port, argv):
+    d = defer.Deferred()
+    f = ControlFactory(name, argv, d, False)
     reactor.connectTCP(host, port, f)
     return d
 
@@ -60,7 +66,7 @@ def call_at_to(start_datetime, end_datetime, f, *args, **kwargs):
         return reactor.callLater(seconds_ahead, f, *args, **kwargs)
     elif seconds_before_end > FIVE_MINUTES:
         log.msg("Obs in progress, starting now!")
-        return reactor.callWhenRunning(f, *args, **kwargs)
+        return reactor.callLater(1, f, *args, **kwargs)
     else:
         log.msg("Not scheduling; Obs in the past or too short")
 
@@ -124,23 +130,23 @@ class WorkerService(Service):
         self._cfg_file.close()
 
 
-    def endObservation(self, obs, connector=connect):
+    def endObservation(self, obs, connector=stop):
         def stop_clients(V):
-            l = [connector(*v, start=False) for v in V]
+            l = [connector(*v) for v in V]
             return defer.DeferredList(l, consumeErrors=True)
 
         def success(result):
             log.msg("%s" % (result))
 
-        atv = connector(*self._activeconfig.atv(obs), start=False)
-        server = connector(*self._activeconfig.server(obs), start=False)
+        atv = connector(*self._activeconfig.atv(obs))
+        server = connector(*self._activeconfig.server(obs))
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
         correlator = stop_clients([self._activeconfig.correlator(obs)])
         result = defer.DeferredList([atv, server, pipelines, correlator], consumeErrors=True)
         result.addCallback(success)
         
 
-    def processObservation(self, obs, connector=connect):
+    def processObservation(self, obs, connector=start):
         """
         Start a pipeline to process the observation
         """
@@ -152,7 +158,7 @@ class WorkerService(Service):
                     if type(v) == tuple and not v[0]:
                         return None
 
-                l = [connector(*v, start=True) for v in V]
+                l = [connector(*v) for v in V]
                 return defer.DeferredList(l, fireOnOneCallback=True, consumeErrors=True)
 
             def success(result):
@@ -174,8 +180,8 @@ class WorkerService(Service):
                 reactor.callLater(10, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
 
-            atv = connector(*self._activeconfig.atv(obs), start=True)
-            server = connector(*self._activeconfig.server(obs), start=True)
+            atv = connector(*self._activeconfig.atv(obs))
+            server = connector(*self._activeconfig.server(obs))
             correlator = defer.DeferredList([atv,server], consumeErrors=True)
             server.addCallback(start_clients, self._activeconfig.pipelines(obs))
             correlator.addCallback(start_clients, [self._activeconfig.correlator(obs)])
@@ -196,20 +202,16 @@ class WorkerService(Service):
                 log.msg("Invalid %s; ignoring" % (obs))
                 return
 
-            call = call_at_to(
-                obs.start_time - datetime.timedelta(seconds=self.PRE_TIME),
-                obs.end_time,
-                self.processObservation,
-                obs
-            )
             key = hash(obs)
 
             if key in self._parsets and self._parsets[key].active():
                 log.msg("Already scheduled %s; ignoring" % (obs))
-            else:
-                log.msg("Scheduling observation %s" % (obs))
-                self._parsets[key] = call
-                call_at(obs.end_time, self.endObservation, obs)
+            elif key not in self._parsets:
+                call = call_at_to(obs.start_time - datetime.timedelta(seconds=self.PRE_TIME), obs.end_time, self.processObservation, obs)
+                if call:
+                    log.msg("Scheduling observation %s (%s)" % (obs, filepath.path))
+                    self._parsets[key] = call
+                    call_at(obs.end_time, self.endObservation, obs)
         else:
             log.msg("Ignoring %s" % (filepath.path))
 

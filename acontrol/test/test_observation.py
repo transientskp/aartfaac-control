@@ -28,7 +28,7 @@ class ObservationTestCase(TestWithParset):
         )
 
     def test_hash(self):
-        self.assertEqual(hash(self.observation), 201502022247)
+        self.assertEqual(hash(self.observation), 1502022247)
 
     def test_sort(self):
         # Observations are sorted by start time.

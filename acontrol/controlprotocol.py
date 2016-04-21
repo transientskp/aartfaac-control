@@ -10,7 +10,7 @@ class ControlProtocol(basic.LineReceiver):
     VERSION = '0'
 
     def __init__(self):
-        self.delimiter = b'\n'
+        self.delimiter = '\n'
 
 
     def connectionMade(self):
