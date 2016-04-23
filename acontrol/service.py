@@ -211,7 +211,7 @@ class WorkerService(Service):
                 if call:
                     log.msg("Scheduling observation %s (%s)" % (obs, filepath.path))
                     self._parsets[key] = call
-                    call_at(obs.end_time, self.endObservation, obs)
+                    call_at(obs.end_time - datetime.timedelta(seconds=60), self.endObservation, obs)
         else:
             log.msg("Ignoring %s" % (filepath.path))
 
