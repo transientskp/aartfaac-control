@@ -45,7 +45,7 @@ class ServiceTestCase(unittest.TestCase):
 
     def test_success_chain(self):
         
-        def conn_pass(name, host, port, argv, start):
+        def conn_pass(name, host, port, argv):
             conn_pass.counter += 1
             d = defer.Deferred()
             d.callback("success")
@@ -62,7 +62,7 @@ class ServiceTestCase(unittest.TestCase):
 
     def test_fail_chain(self):
         
-        def conn_fail(name, host, port, argv, start):
+        def conn_fail(name, host, port, argv):
             conn_fail.counter += 1
             d = defer.Deferred()
             if "server" in name:
@@ -82,7 +82,7 @@ class ServiceTestCase(unittest.TestCase):
 
     def test_success_chain_minimal(self):
         
-        def conn_fail(name, host, port, argv, start):
+        def conn_fail(name, host, port, argv):
             conn_fail.counter += 1
             d = defer.Deferred()
             if name in ["pipeline-0", "pipeline-1", "pipeline-2", "pipeline-3"]:
@@ -101,7 +101,7 @@ class ServiceTestCase(unittest.TestCase):
 
 
     def test_stop(self):
-        def conn(name, host, port, argv, start):
+        def conn(name, host, port, argv):
             d = defer.Deferred()
             d.callback("success")
             conn.counter += 1
