@@ -53,6 +53,10 @@ EXAMPLE_CONFIG = """
         "input-host": "10.195.100.3"
       }
     },
+    "firmware": {
+      "address": "10.151.252.190:45000",
+      "args": {}
+    },
     "pipeline": {
       "address": [
         "10.144.6.16:45000",

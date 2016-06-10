@@ -180,9 +180,10 @@ class WorkerService(Service):
                 reactor.callLater(10, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
 
+            firmware = connector(*self._activeconfig.firmware(obs))
             atv = connector(*self._activeconfig.atv(obs))
             server = connector(*self._activeconfig.server(obs))
-            correlator = defer.DeferredList([atv,server], consumeErrors=True)
+            correlator = defer.DeferredList([atv,server,firmware], consumeErrors=True)
             server.addCallback(start_clients, self._activeconfig.pipelines(obs))
             correlator.addCallback(start_clients, [self._activeconfig.correlator(obs)])
             result = defer.DeferredList([server, correlator], consumeErrors=True)

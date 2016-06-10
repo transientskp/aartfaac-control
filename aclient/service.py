@@ -8,15 +8,16 @@ from aclient.correlatorprotocol import CorrelatorProtocol
 from aclient.serverprotocol import ServerProtocol
 from aclient.pipelineprotocol import PipelineProtocol
 from aclient.atvprotocol import AtvProtocol
+from aclient.firmwareprotocol import FirmwareProtocol
 from aclient.controlprotocol import ControlFactory
 
 PROTOCOLS = {
     "server":ServerProtocol, 
     "pipeline":PipelineProtocol, 
     "correlator":CorrelatorProtocol, 
+    "firmware":FirmwareProtocol, 
     "atv":AtvProtocol
 }
-
 
 
 class Options(usage.Options):
