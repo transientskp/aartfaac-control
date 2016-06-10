@@ -12,7 +12,7 @@ class FirmwareProtocol(ControlProtocol):
     def start(self, argv):
         if not FirmwareProtocol.process or not FirmwareProtocol.process.is_running:
             log.msg("Starting firmware reset with args: {}".format(argv))
-            cmd = ["%s/reset.sh" % (os.environ['HOME']] + argv.split()
+            cmd = ["%s/reset.sh" % (os.environ['HOME'])] + argv.split()
             FirmwareProtocol.process = WriteProcessProtocol(cmd[0], self.factory.config['logdir'])
             reactor.spawnProcess(FirmwareProtocol.process, cmd[0], cmd, env=os.environ)
             self.sendSuccess()
