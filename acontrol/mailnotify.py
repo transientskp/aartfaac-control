@@ -90,10 +90,11 @@ class MailLog:
 
         a = argv.split()
         prefix = ""
-        for c in a[0]:
-            if c.isalnum():
-                break
-            prefix += c
+        if len(a) > 0:
+            for c in a[0]:
+                if c.isalnum():
+                    break
+                prefix += c
 
         args = "        "
         for w in a:
