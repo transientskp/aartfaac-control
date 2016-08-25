@@ -103,7 +103,7 @@ class WorkerService(Service):
     PRUNE_TIME = 10  # Prune observations that are finished every N seconds
 
 
-    def __init__(self, options, email, config=LOCAL_CONFIG):
+    def __init__(self, options, email, config=EXAMPLE_CONFIG):
         self._available = False
         self._parsets = {}
         self._configs = {}

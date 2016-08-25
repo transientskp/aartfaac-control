@@ -2,6 +2,8 @@
 AARTFAAC Control System
 =======================
 
+.. image:: https://travis-ci.org/transientskp/aartfaac-control.svg?branch=master
+    :target: https://travis-ci.org/transientskp/aartfaac-control
 .. image:: https://coveralls.io/repos/github/transientskp/aartfaac-control/badge.svg
     :target: https://coveralls.io/github/transientskp/aartfaac-control
     
