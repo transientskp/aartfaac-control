@@ -1,10 +1,15 @@
-import time, datetime
+import time
+import datetime
+import math
+import copy
 
 try:
     import json
 except ImportError:
     import simplejson as json
 import copy
+
+PORT = 4000
 
 class Configuration(object):
     """
@@ -13,13 +18,22 @@ class Configuration(object):
     def __init__(self, filepath):
         self.filepath = filepath
         self._config = json.loads(open(filepath,'r').read())
-        ts = time.strptime(self._config["starttime"], "%Y-%m-%d %H:%M:%S")
-        self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon, ts.tm_mday,
-                ts.tm_hour, ts.tm_min, ts.tm_sec)
+        self.start_time = datetime.datetime.now()
+        if (self._config["starttime"] != "now"):
+            ts = time.strptime(self._config["starttime"], "%Y-%m-%d %H:%M:%S")
+            self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon,
+                    ts.tm_mday, ts.tm_hour, ts.tm_min, ts.tm_sec)
 
 
     def is_valid(self):
-        return True
+        return len(self._config["lba"]["subbands"]) == len(self._config["programs"]["pipelines"]["instances"])
+
+
+    def emaillist(self):
+        if self._config.has_key("email"):
+            return self._config["email"]
+        else:
+            return []
 
 
     @staticmethod
@@ -40,106 +54,54 @@ class Configuration(object):
 
     @staticmethod
     def merge(A, B):
+        C = copy.deepcopy(B)
         for k,v in A.iteritems():
-            B[k] = v
-        return B
-
-
-    def stations(self, obs):
-        cmd = "setsubbands.sh "
-
-        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
-            cmd += ",".join(map(str, self._config["lba"]["subbands"]))
-        else:
-            raise NotImplementedError
-
-        return cmd
-
-
-    def atv(self, obs):
-        cfg = self._config["programs"]["atv"]
-        default_args = {"antpos": "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat", "output":"/data/atv", "snapshot":"/var/www/html", "port":5000}
-        args = self.merge(cfg["args"], default_args)
-        
-        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
-            args["antpos"] = args["antpos"] % (obs.antenna_set.lower())
-            args["freq"] = self.sub2freq(cfg["subband"])
-        else:
-            raise NotImplementedError
-
-        cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in args.iteritems()])
-        address = cfg["address"].split(':')
-        return ("atv", address[0], int(address[1]), cmd)
-
-
-    def firmware(self, obs):
-        cfg = self._config["programs"]["firmware"]
-        address = cfg["address"].split(':')
-        cmd = ""
-        return ("firmware", address[0], int(address[1]), cmd)
-
-
-    def correlator(self, obs):
-        cfg = self._config["programs"]["correlator"]
-        default_args = {"p":1, "n":288, "t":768, "c":256, "C":63, "m":9, "d":0, "g":"0-9", "b":16, "s":8, "r":0, "N":"4-11,28-35/16-23,40-47", "A":"0:6", "O":"0:4,1:4", "i":"10.195.100.3:53268,10.195.100.3:53276,10.195.100.3:53284,10.195.100.3:53292,10.195.100.3:53300,10.195.100.3:53308"}
-        args = self.merge(cfg["args"], default_args)
-        address = cfg["address"].split(':')
-
-        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
-            serverip = self._config["programs"]["server"]["address"].split(':')[0]
-            atvip = self._config["programs"]["atv"]["address"].split(':')[0]
-            n = self._config["lba"]["subbands"].index(self._config["programs"]["atv"]["subband"])
-            N = len(self._config["lba"]["subbands"])
-            outputs = ["%s:%i" % (serverip, 4100+i) for i in range(n)]
-            outputs += ["%s:%i" % (atvip, self._config["programs"]["atv"]["args"]["port"])]
-            outputs += ["%s:%i" % (serverip, 4100+i) for i in range(n, N-1)]
-            args["o"] = ",".join(["tcp:%s" % (addr) for addr in outputs])
-            args["r"] = obs.duration.seconds
-        else:
-            raise NotImplementedError
-
-        cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
-        return ("correlator", address[0], int(address[1]), cmd)
+            C[k] = v
+        return C
 
     
-    def server(self, obs):
-        cfg = self._config["programs"]["server"]
-        address = cfg["address"].split(':')
-        default_args = {"buffer-max-size":60*1024**3/7, "input-host":"10.195.100.3", "input-port-start":4100}
-        args = self.merge(cfg["args"], default_args)
-        subbands = copy.deepcopy(self._config["lba"]["subbands"])
-        subbands.remove(self._config["programs"]["atv"]["subband"])
-        
-        cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
-        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
-            cmd += " " + " ".join(["--stream 63 %i" % (s) for s in subbands])
-        else:
-            raise NotImplementedError
+    def correlators(self, obs):
+        correlators = []
+        configs = self._config["programs"]["correlators"]
+        pipelines = self._config["programs"]["pipelines"]["instances"]
+        npipelines = len(pipelines)/len(configs["instances"])
 
-        a = self._config["lba"]["channels"][0::2]
-        b = self._config["lba"]["channels"][1::2]
-        cmd += " " + ",".join(["%i-%i" % (t[0],t[1]) for t in zip(a,b)])
-        return ("server", address[0], int(address[1]), cmd)
+        port = PORT
+        for i,cfg in enumerate(configs["instances"]):
+            address = cfg["address"].split(':')
+            if not cfg.has_key("argv"):
+                cfg["argv"] = {}
+            argv = Configuration.merge(configs["argv"], cfg["argv"])
 
+            outputs = []
+            for v in pipelines[i*npipelines:(i+1)*npipelines]:
+                ip = v["address"].split(':')[0]
+                outputs.append("%s:%i" % (ip, port))
+                port += 1
 
+            argv["o"] = ",".join(["tcp:%s" % (addr) for addr in outputs])
+            argv["r"] = obs.duration.seconds
+            cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in argv.iteritems()])
+            correlators.append((cfg["name"], address[0], int(address[1]), cmd))
+
+        return correlators
+
+    
     def pipelines(self, obs):
-        cfg = self._config["programs"]["pipeline"]
-        default_args = {"server-host":"10.195.100.30", "ant-sigma":4, "vis-sigma":3, "antenna-positions": "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat"}
-        args = self.merge(cfg["args"], default_args)
-        args["antenna-positions"] = args["antenna-positions"] % (obs.antenna_set.lower())
-
         pipelines = []
+        configs = self._config["programs"]["pipelines"]
+        subbands = self._config["lba"]["subbands"]
 
-        if obs.antenna_set.lower() in self._config["lba"]["modes"]:
-            i = 0
-            for addr in cfg["address"]:
-                args["casa"] = "/data/%s" % (obs.start_time.strftime("%Y%m%d-%H%M"))
-                cmd = " ".join(["--%s %s" % (str(k), str(v)) for k,v in args.iteritems()])
-                a = addr.split(':')
-                pipelines.append(("pipeline-%d" % (i), a[0], int(a[1]), cmd))
-                i+=1
-        else:
-            raise NotImplementedError
+        for i,cfg in enumerate(configs["instances"]):
+            address = cfg["address"].split(':')
+            if not cfg.has_key("argv"):
+                cfg["argv"] = {}
+            argv = Configuration.merge(configs["argv"], cfg["argv"])
+            argv["subband"] = subbands[i]
+            argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+            argv["port"] = PORT + i
+            cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
+            pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
 
         return pipelines
 

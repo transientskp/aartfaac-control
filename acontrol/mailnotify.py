@@ -18,20 +18,23 @@ from email.MIMEText import MIMEText
 COMMASPACE = ', '
 class MailNotify:
     FROM = "acontrol@mcu001.control.lofar"
-    def __init__(self, mail_file='maillist.txt', dryrun=False):
-        self._mail_file = mail_file
+    def __init__(self, dryrun=False):
+        self._maillist = []
         self._mail_regex = re.compile(r'[^@]+@[^@]+\.[^@]+')
         self.dryrun = dryrun
+
+
+    def updatelist(self, maillist):
+        self._maillist = filter(self.address, maillist)
 
 
     def send(self, subject, body, files=None, server="127.0.0.1"):
         """
         Sends a standard email with a subject, body and potential attachments
         """
-        maillist = filter(self.address, open(self._mail_file, 'r').read().split("\n"))
         msg = MIMEMultipart()
         msg['From']=MailNotify.FROM
-        msg['To']=COMMASPACE.join(maillist)
+        msg['To']=COMMASPACE.join(self._maillist)
         msg['Subject']=subject
         msg.attach(MIMEText(body))
 
@@ -55,7 +58,7 @@ class MailNotify:
         if not self.dryrun:
             try:
                 smtp = smtplib.SMTP(server)
-                smtp.sendmail(MailNotify.FROM, maillist, msg.as_string())
+                smtp.sendmail(MailNotify.FROM, self._maillist, msg.as_string())
                 smtp.close()
             except:
                 log.msg("\n\nSubject: %s\n\n%s\n\n" % (subject, body))

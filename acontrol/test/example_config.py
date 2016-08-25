@@ -4,68 +4,142 @@ import tempfile
 
 EXAMPLE_CONFIG = """
 {
-  "starttime": "2016-03-07 04:12:47",
+  "starttime": "now",
+  "email": [
+    "folkerthuizinga@gmail.com",
+    "hsuyeep@gmail.com",
+    "antonia.rowlinson@gmail.com",
+    "mk.kuiack@gmail.com"
+  ],
   "lba": {
     "modes": ["lba_inner", "lba_outer"],
     "subbands": [
-      295,
-      296,
-      297,
-      298,
-      299,
-      300,
-      301,
-      302
-    ],
-    "channels": [
-      0,
-      62
-    ],
-    "flagged": [
-      2,
-      4,
-      128
+      318,
+      319,
+      321,
+      322,
+      323,
+      324,
+      325,
+      326,
+      310,
+      311,
+      312,
+      313,
+      314,
+      315,
+      316,
+      317
     ]
   },
-  "hba": {
-    
-  },
   "programs": {
-    "atv": {
-      "address": "10.144.6.13:45000",
-      "subband": 299,
-      "args": {
-        "output": "\/data\/atv",
-        "snapshot": "\/var\/www",
-        "port": 5000
-      }
+    "correlators": {
+      "argv": {
+        "A": "0:6",
+        "C": "63",
+        "b": "16",
+        "d": "0",
+        "g": "0-9",
+        "m": "9",
+        "c": "256",
+        "O": "0:4,1:4",
+        "n": "288",
+        "p": "1",
+        "s": "8",
+        "t": "768",
+        "N": "4-11,28-35/16-23,40-47"
+      },
+      "instances": [
+        {
+          "name": "agc001",
+          "address": "10.144.6.11:45000",
+          "argv": {
+            "i": "10.195.100.1:53269,10.195.100.1:53277,10.195.100.1:53285,10.195.100.1:53293,10.195.100.1:53301,10.195.100.1:53309"
+          }
+        },
+        {
+          "name": "agc002",
+          "address": "10.144.6.31:45000",
+          "argv": {
+            "i": "10.195.100.3:53268,10.195.100.3:53276,10.195.100.3:53284,10.195.100.3:53292,10.195.100.3:53300,10.195.100.3:53308"
+          }
+        }
+      ]
     },
-    "correlator": {
-      "address": "10.144.6.31:45000",
-      "args": {
-        "b": 16
-      }
-    },
-    "server": {
-      "address": "10.195.100.30:45000",
-      "args": {
-        "buffer-max-size": 53687091200,
-        "input-host": "10.195.100.3"
-      }
-    },
-    "firmware": {
-      "address": "10.151.252.190:45000",
-      "args": {}
-    },
-    "pipeline": {
-      "address": [
-        "10.144.6.18:45000",
-        "10.144.6.19:45000"
-      ],
-      "args": {
-        "ant-sigma": 4,
-        "vis-sigma": 3
-      }
+    "pipelines": {
+      "argv": {
+        "antsigma": 4,
+        "vissigma": 2.5,
+        "buffer": 70,
+        "nthreads": 6,
+        "v": 1
+      },
+      "instances": [
+        {
+          "name": "ais002-1",
+          "address": "10.195.100.30:45001"
+        },
+        {
+          "name": "ais002-2",
+          "address": "10.195.100.30:45002"
+        },
+        {
+          "name": "ais002-3",
+          "address": "10.195.100.30:45003"
+        },
+        {
+          "name": "ais003-1",
+          "address": "10.195.100.40:45001"
+        },
+        {
+          "name": "ais003-2",
+          "address": "10.195.100.40:45002"
+        },
+        {
+          "name": "ais003-3",
+          "address": "10.195.100.40:45003"
+        },
+        {
+          "name": "ais004-1",
+          "address": "10.195.100.50:45001"
+        },
+        {
+          "name": "ais004-2",
+          "address": "10.195.100.50:45002"
+        },
+        {
+          "name": "ais004-3",
+          "address": "10.195.100.50:45003"
+        },
+        {
+          "name": "ais005-1",
+          "address": "10.195.100.60:45001"
+        },
+        {
+          "name": "ais005-2",
+          "address": "10.195.100.60:45002"
+        },
+        {
+          "name": "ais005-3",
+          "address": "10.195.100.60:45003"
+        },
+        {
+          "name": "ais006-1",
+          "address": "10.195.100.70:45001"
+        },
+        {
+          "name": "ais006-2",
+          "address": "10.195.100.70:45002"
+        },
+        {
+          "name": "ais007-1",
+          "address": "10.195.100.80:45001"
+        },
+        {
+          "name": "ais007-2",
+          "address": "10.195.100.80:45002"
+        }
+      ]
     }
   }
 }
@@ -74,64 +148,55 @@ EXAMPLE_CONFIG = textwrap.dedent(EXAMPLE_CONFIG).strip()
 
 LOCAL_CONFIG = """
 {
-  "starttime": "2016-03-07 04:12:47",
+  "starttime": "now",
+  "email": [
+    "none@uva.nl"
+  ],
   "lba": {
     "modes": ["lba_inner", "lba_outer"],
     "subbands": [
-      295,
-      296,
-      297,
-      298,
-      299,
-      300,
-      301,
-      302
-    ],
-    "channels": [
-      0,
-      62
-    ],
-    "flagged": [
-      2,
-      4,
-      128
+      318,
+      319
     ]
   },
-  "hba": {
-    
-  },
   "programs": {
-    "atv": {
-      "address": "127.0.0.1:45000",
-      "subband": 299,
-      "args": {
-        "output": "\/data\/atv",
-        "snapshot": "\/var\/www",
-        "port": 5000
-      }
+    "correlators": {
+      "argv": {
+        "A": "0:6",
+        "C": "63"
+      },
+      "instances": [
+        {
+          "name": "agc001",
+          "address": "127.0.0.1:4000",
+          "argv": {
+            "i": "10.195.100.1:53269"
+          }
+        },
+        {
+          "name": "agc002",
+          "address": "127.0.0.1:4001",
+          "argv": {
+            "i": "10.195.100.3:53268"
+          }
+        }
+      ]
     },
-    "correlator": {
-      "address": "127.0.0.1:46000",
-      "args": {
-        "b": 16
-      }
-    },
-    "server": {
-      "address": "127.0.0.1:47000",
-      "args": {
-        "buffer-max-size": 64424509440,
-        "input-host": "127.0.0.1"
-      }
-    },
-    "pipeline": {
-      "address": [
-        "127.0.0.1:48000",
-        "127.0.0.1:48001"
-      ],
-      "args": {
-        "ant-sigma": 4,
-        "vis-sigma": 3
-      }
+    "pipelines": {
+      "argv": {
+        "nthreads": 6,
+        "v": 1
+      },
+      "instances": [
+        {
+          "name": "p0",
+          "address": "127.0.0.1:5000"
+        },
+        {
+          "name": "p1",
+          "address": "127.0.0.1:5001"
+        }
+      ]
     }
   }
 }

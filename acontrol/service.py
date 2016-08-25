@@ -79,7 +79,6 @@ class Options(usage.Options):
         ["lofar-pattern", None, "MCU001*", "Glob lofar pattern to select usable parsets"],
         ["config-dir", None, "/opt/aartfaac/var/run", "Directory to monitor for lofar parsets"],
         ["config-pattern", None, "AARTFAAC*", "Glob aartfaac pattern to select usable parsets"],
-        ["maillist", "m", "maillist.txt", "Textfile with email addresses, one per line"]
     ]
 
 
@@ -104,7 +103,7 @@ class WorkerService(Service):
     PRUNE_TIME = 10  # Prune observations that are finished every N seconds
 
 
-    def __init__(self, options, email, config=EXAMPLE_CONFIG):
+    def __init__(self, options, email, config=LOCAL_CONFIG):
         self._available = False
         self._parsets = {}
         self._configs = {}
@@ -116,6 +115,7 @@ class WorkerService(Service):
         self._cfg_file.write(config)
         self._cfg_file.seek(0)
         self._activeconfig = Configuration(self._cfg_file.name)
+        self._email.updatelist(self._activeconfig.emaillist())
 
 
     def startService(self):
@@ -138,11 +138,9 @@ class WorkerService(Service):
         def success(result):
             log.msg("%s" % (result))
 
-        atv = connector(*self._activeconfig.atv(obs))
-        server = connector(*self._activeconfig.server(obs))
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
-        correlator = stop_clients([self._activeconfig.correlator(obs)])
-        result = defer.DeferredList([atv, server, pipelines, correlator], consumeErrors=True)
+        correlators = stop_clients(self._activeconfig.correlators(obs))
+        result = defer.DeferredList([pipelines, correlators], consumeErrors=True)
         result.addCallback(success)
         
 
@@ -153,13 +151,16 @@ class WorkerService(Service):
         if self._available:
             mlog.m("Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath))
 
-            def start_clients(result, V):
+            def pass_1N(result, V):
+                s = False
                 for v in result:
-                    if type(v) == tuple and not v[0]:
-                        return None
+                    s = s or (type(v) == tuple and v[0])
+
+                if not s:
+                    return None
 
                 l = [connector(*v) for v in V]
-                return defer.DeferredList(l, fireOnOneCallback=True, consumeErrors=True)
+                return defer.DeferredList(l, fireOnOneCallback=False, consumeErrors=True)
 
             def success(result):
                 s = True
@@ -179,14 +180,10 @@ class WorkerService(Service):
 
                 reactor.callLater(10, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
-
-            firmware = connector(*self._activeconfig.firmware(obs))
-            atv = connector(*self._activeconfig.atv(obs))
-            server = connector(*self._activeconfig.server(obs))
-            correlator = defer.DeferredList([atv,server,firmware], consumeErrors=True)
-            server.addCallback(start_clients, self._activeconfig.pipelines(obs))
-            correlator.addCallback(start_clients, [self._activeconfig.correlator(obs)])
-            result = defer.DeferredList([server, correlator], consumeErrors=True)
+            pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
+            correlators = defer.DeferredList(pipelines, consumeErrors=True)
+            correlators.addCallback(pass_1N, self._activeconfig.correlators(obs))
+            result = defer.DeferredList([correlators], consumeErrors=True)
             result.addCallback(success)
         else:
             log.msg("Skipping %s" % (obs))
@@ -223,6 +220,7 @@ class WorkerService(Service):
         """
         if config.is_valid():
             self._activeconfig = config
+            self._email.updatelist(self._activeconfig.emaillist())
             # TODO: Implement setstations()
             # self._activeconfig.setstations(obs)
             log.msg("Set AARTFAAC configuration to %s" % (config))
@@ -277,7 +275,7 @@ class WorkerService(Service):
 
 def makeService(options):
     acontrol_service = MultiService()
-    email = MailNotify(options['maillist'], dryrun=False)
+    email = MailNotify(dryrun=False)
     #log.addObserver(email.error)
     worker_service = WorkerService(options, email)
     worker_service.setName("Worker")

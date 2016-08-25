@@ -24,12 +24,8 @@ class ServiceTestCase(unittest.TestCase):
         self.parset.write(EXAMPLE_PARSET)
         self.parset.seek(0)
         self.obs = Observation(self.parset.name)
-        self.mailfile = tempfile.NamedTemporaryFile(mode='w')
-        self.mailfile.write('none@none.com\n')
-        self.mailfile.seek(0)
-
         self.config = Options()
-        self.config.parseOptions(['--maillist',self.mailfile.name,'--lofar-dir',self.lof_dir, '--config-dir',self.cfg_dir])
+        self.config.parseOptions(['--lofar-dir',self.lof_dir, '--config-dir',self.cfg_dir])
 
 
     def _make_service(self, options):
@@ -38,7 +34,7 @@ class ServiceTestCase(unittest.TestCase):
 
 
     def test_make_service(self):
-        service = self._make_service(['--maillist',self.mailfile.name,'--lofar-dir',self.lof_dir, '--config-dir',self.cfg_dir])
+        service = self._make_service(['--lofar-dir',self.lof_dir, '--config-dir',self.cfg_dir])
         for service_name in ("LOFAR Parset Notifier", "AARTFAAC Config Notifier", "Worker"):
             self.assertTrue(service.namedServices.has_key(service_name))
 
@@ -52,52 +48,55 @@ class ServiceTestCase(unittest.TestCase):
             return d
         conn_pass.counter = 0
 
-        email = MailNotify(self.config['maillist'], True)
+        email = MailNotify(True)
+        email.updatelist(["none@uva.nl"])
         ws = WorkerService(self.config, email, EXAMPLE_CONFIG)
         ws.startService()
         ws.processObservation(self.obs, connector=conn_pass)
         ws.stopService()
-        self.assertEqual(conn_pass.counter, 9)
+        self.assertEqual(conn_pass.counter, 18)
 
 
     def test_fail_chain(self):
         
         def conn_fail(name, host, port, argv):
-            conn_fail.counter += 1
             d = defer.Deferred()
-            if "server" in name:
+            if "ais002" in name:
                 d.errback(Exception("fail"))
             else:
+                conn_fail.counter += 1
                 d.callback("success")
             return d
         conn_fail.counter = 0
 
-        email = MailNotify(self.config['maillist'], True)
+        email = MailNotify(True)
+        email.updatelist(["none@uva.nl"])
         ws = WorkerService(self.config, email, EXAMPLE_CONFIG)
         ws.startService()
         ws.processObservation(self.obs, connector=conn_fail)
         ws.stopService()
-        self.assertEqual(conn_fail.counter, 3)
+        self.assertEqual(conn_fail.counter, 15)
         
 
     def test_success_chain_minimal(self):
         
         def conn_fail(name, host, port, argv):
-            conn_fail.counter += 1
             d = defer.Deferred()
-            if name in ["pipeline-0", "pipeline-1", "pipeline-2", "pipeline-3"]:
-                d.errback(Exception("fail"))
-            else:
+            if name in "ais002-1 agc001":
+                conn_fail.counter += 1
                 d.callback("success")
+            else:
+                d.errback(Exception("fail"))
             return d
         conn_fail.counter = 0
 
-        email = MailNotify(self.config['maillist'], True)
+        email = MailNotify(True)
+        email.updatelist(["none@uva.nl"])
         ws = WorkerService(self.config, email, EXAMPLE_CONFIG)
         ws.startService()
         ws.processObservation(self.obs, connector=conn_fail)
         ws.stopService()
-        self.assertEqual(conn_fail.counter, 9)
+        self.assertEqual(conn_fail.counter, 2)
 
 
     def test_stop(self):
@@ -108,12 +107,13 @@ class ServiceTestCase(unittest.TestCase):
             return d
         conn.counter = 0
 
-        email = MailNotify(self.config['maillist'], True)
+        email = MailNotify(True)
+        email.updatelist(["none@uva.nl"])
         ws = WorkerService(self.config, email, EXAMPLE_CONFIG)
         ws.startService()
         ws.endObservation(self.obs, connector=conn)
         ws.stopService()
-        self.assertEqual(conn.counter, 8)
+        self.assertEqual(conn.counter, 18)
 
 
 
