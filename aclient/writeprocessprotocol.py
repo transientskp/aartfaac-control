@@ -2,6 +2,7 @@ import os
 import time
 
 from twisted.internet import protocol
+from twisted.internet import defer
 from twisted.python import log
 
 class WriteProcessProtocol(protocol.ProcessProtocol):
@@ -9,6 +10,8 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
     def __init__(self, name, path):
         self.name = name
         self.path = path
+        self.dstarted = defer.Deferred()
+        self.dstopped = defer.Deferred()
         self.is_running = False
 
     def connectionMade(self):
@@ -21,6 +24,7 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
         log.msg("Started {}({})".format(self.name, self.pid))
         log.msg("  Writing stderr to {}".format(self.filestderr.name))
         log.msg("  Writing stdout to {}".format(self.filestdout.name))
+        self.dstarted.callback("Started (%d)" % (self.pid))
 
     def outReceived(self, data):
         self.filestdout.write(data)
@@ -34,3 +38,4 @@ class WriteProcessProtocol(protocol.ProcessProtocol):
         self.filestderr.close()
         self.filestdout.close()
         log.msg("Ended {}({}) with exit code {}".format(self.name, self.pid, rc))
+        self.dstopped.callback("Ended with exit code ({})".format(rc))

@@ -10,19 +10,24 @@ from aclient.writeprocessprotocol import WriteProcessProtocol
 
 class WriteProcessTestCase(unittest.TestCase):
     def setUp(self):
-        self.test_file = tempfile.NamedTemporaryFile(mode='w')
-        self.cmd = ['tail', '-f', self.test_file.name]
-        self.proto = WriteProcessProtocol('tail', '/tmp')
+        self.cmd = ['ls', '/tmp']
+        self.proto = WriteProcessProtocol('ls', '/tmp')
 
     def test_init(self):
         self.assertFalse(self.proto.is_running)
 
-    def test_running(self):
-        p = reactor.spawnProcess(self.proto, self.cmd[0], self.cmd)
-        self.assertTrue(self.proto.is_running)
-        self.assertTrue(os.path.exists(self.proto.filestdout.name))
-        self.assertTrue(os.path.exists(self.proto.filestderr.name))
-        p.loseConnection()
+    def test_run_process(self):
+        def result(r):
+            self.assertTrue(type(r) == str)
+
+        def stop(r):
+            self.assertTrue(self.proto.is_running)
+            self.assertTrue(type(r) == str)
+
+        self.proto.dstopped.addCallback(result)
+        self.proto.dstarted.addCallback(stop)
+        reactor.spawnProcess(self.proto, self.cmd[0], self.cmd)
+        return self.proto.dstopped
 
 if __name__ == "__main__":
 	unittest.main()
