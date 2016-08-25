@@ -36,6 +36,6 @@ def makeService(config):
 
     program = PROGRAMS[config['program'].lower()]
     factory = ControlFactory(config, program['cmd'], program['env'])
-    service = internet.TCPServer(config['port'], factory)
+    service = internet.TCPServer(int(config['port']), factory)
     return service
 
