@@ -3,7 +3,7 @@ AARTFAAC Control System
 =======================
 
 .. image:: https://coveralls.io/repos/github/transientskp/aartfaac-control/badge.svg
-:target: https://coveralls.io/github/transientskp/aartfaac-control
+    :target: https://coveralls.io/github/transientskp/aartfaac-control
     
 The control system is a daemon which runs on the LOFAR Main Control Unit
 (MCU). It watches for new parsets which describe upcoming observations and
