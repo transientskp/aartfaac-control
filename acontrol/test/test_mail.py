@@ -10,12 +10,14 @@ class MailNotifyTestCase(unittest.TestCase):
     def setUp(self):
         self.email = MailNotify(dryrun=True)
         self.email.updatelist(["test1@uva.nl", "test2@uva.nl"])
+        self.file = tempfile.NamedTemporaryFile(mode='w')
+        self.file.write('junk data')
 
     def tearDown(self):
-        pass
+        self.file.close()
 
     def test_mail(self):
-        self.email.send("test", "acontrol unittest", files=[])
+        self.email.send("test", "acontrol unittest", files=[self.file.name])
 
     def test_layout(self):
         mlog.m("subject\n")
