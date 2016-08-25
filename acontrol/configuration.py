@@ -100,6 +100,7 @@ class Configuration(object):
             argv["subband"] = subbands[i]
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = PORT + i
+            argv["output"] = "/data/%i-%s.cal" % (subbands[i], obs.start_time.strftime("%Y%m%d%H%M"))
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
 
