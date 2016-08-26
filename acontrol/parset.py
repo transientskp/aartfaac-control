@@ -14,7 +14,6 @@ class Parset(dict):
             self.adoptFile(filename)
 
     def _parse_file(self, filename):
-        self._data = {}
         f = open(filename)
         for line in f:
             if '#' in line:
@@ -31,9 +30,6 @@ class Parset(dict):
     def getBool(self, key, default=None):
         return bool(self.get(key, default))
 
-    def getDouble(self, key, default=None):
-        return float(self.get(key, default))
-
     def getFloat(self, key, default=None):
         return float(self.get(key, default))
 
@@ -43,9 +39,6 @@ class Parset(dict):
     def getString(self, key, default=None):
         return str(self.get(key, default))
 
-    def isDefined(self, key):
-        return key in self._data
-
     def keywords(self):
         return self.keys()
 
@@ -54,9 +47,6 @@ class Parset(dict):
 
     def replace(self, key, value):
         self[key] = value
-
-    def size(self):
-        return len(self._data)
 
     def writeFile(self, filename):
         file = open(filename, 'w')

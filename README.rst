@@ -25,7 +25,7 @@ to install our own versions.
 
 Parsets describing upcoming observations are written to disk in
 ``/opt/lofar/var/run``. The ID numbers in the filenames are not directly
-useful, but the can be sorted by ctime.
+useful, but they can be sorted by ctime.
 
 LCU System Setup
 ----------------

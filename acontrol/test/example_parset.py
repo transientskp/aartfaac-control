@@ -3,6 +3,7 @@ import textwrap
 import tempfile
 
 EXAMPLE_PARSET = """
+# Example Parset Snippet
 Observation.antennaArray=LBA
 Observation.antennaSet=LBA_OUTER
 Observation.bandFilter=LBA_30_90

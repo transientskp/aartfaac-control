@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="AControl",
-    description='Aartfaac control system - starts the pipelines during a valid observation',
+    description='Aartfaac control system - daemon that boots aartfaac observations',
     author='Folkert Huizinga',
     author_email='f.huizinga@uva.nl',
     version='1.0',
