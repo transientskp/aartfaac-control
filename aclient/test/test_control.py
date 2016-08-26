@@ -35,7 +35,6 @@ class ControlTestCase(unittest.TestCase):
 
     def test_start(self):
         self.proto.dataReceived('{} START\n'.format(ControlProtocol.VERSION))
-        print self.tr.value()
 
     def test_stop(self):
         self.proto.dataReceived('{} STOP\n'.format(ControlProtocol.VERSION))
