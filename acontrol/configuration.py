@@ -9,7 +9,6 @@ except ImportError:
     import simplejson as json
 import copy
 
-PORT = 4000
 
 class Configuration(object):
     """
@@ -66,19 +65,18 @@ class Configuration(object):
         pipelines = self._config["programs"]["pipelines"]["instances"]
         npipelines = len(pipelines)/len(configs["instances"])
 
-        port = PORT
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
+
             if not cfg.has_key("argv"):
                 cfg["argv"] = {}
-            argv = Configuration.merge(configs["argv"], cfg["argv"])
 
             outputs = []
             for v in pipelines[i*npipelines:(i+1)*npipelines]:
-                ip = v["address"].split(':')[0]
-                outputs.append("%s:%i" % (ip, port))
-                port += 1
+                ip, port = v["input"].split(':')
+                outputs.append("%s:%i" % (ip, int(port)))
 
+            argv = Configuration.merge(configs["argv"], cfg["argv"])
             argv["o"] = ",".join(["tcp:%s" % (addr) for addr in outputs])
             argv["r"] = obs.duration.seconds
             cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in argv.iteritems()])
@@ -94,13 +92,16 @@ class Configuration(object):
 
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
+            _, port = cfg["input"].split(':')
+
             if not cfg.has_key("argv"):
                 cfg["argv"] = {}
+
             argv = Configuration.merge(configs["argv"], cfg["argv"])
             argv["subband"] = subbands[i]
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
-            argv["port"] = PORT + i
-            argv["output"] = "/data/%i-%s.cal" % (subbands[i], obs.start_time.strftime("%Y%m%d%H%M"))
+            argv["port"] = port
+            argv["output"] = "file:/data/%i-%s.cal" % (subbands[i], obs.start_time.strftime("%Y%m%d%H%M"))
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
 
