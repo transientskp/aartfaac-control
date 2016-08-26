@@ -236,7 +236,7 @@ class WorkerService(Service):
         if fnmatch.fnmatch(filepath.basename(), self._aapattern):
             cfg = Configuration(filepath.path)
             call = call_at(
-                cfg.start_time - datetime.timedelta(seconds=self.PRE_TIME),
+                cfg.start_time,
                 self.applyConfiguration,
                 cfg
             )

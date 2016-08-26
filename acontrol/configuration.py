@@ -17,7 +17,7 @@ class Configuration(object):
     def __init__(self, filepath):
         self.filepath = filepath
         self._config = json.loads(open(filepath,'r').read())
-        self.start_time = datetime.datetime.now()
+        self.start_time = datetime.datetime.now() + datetime.timedelta(seconds=2)
         if (self._config["starttime"] != "now"):
             ts = time.strptime(self._config["starttime"], "%Y-%m-%d %H:%M:%S")
             self.start_time = datetime.datetime( ts.tm_year, ts.tm_mon,
