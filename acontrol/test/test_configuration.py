@@ -64,7 +64,6 @@ class ConfigurationTestCase(TestWithConfig):
 
     def test_correlator(self):
         cmd = self.config.correlators(self.obs)
-        print cmd
         self.assertEqual(2, len(cmd))
 
 
