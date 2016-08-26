@@ -30,6 +30,15 @@ class ObservationTestCase(TestWithParset):
     def test_hash(self):
         self.assertEqual(hash(self.observation), 1502022247)
 
+    def test_start(self):
+        self.assertEqual(self.observation.start, "22:47")
+
+    def test_end(self):
+        self.assertEqual(self.observation.end, "23:48")
+
+    def test_isvalid(self):
+        self.assertTrue(self.observation.is_valid())
+
     def test_sort(self):
         # Observations are sorted by start time.
         self.assertTrue(self.observation == self.observation)

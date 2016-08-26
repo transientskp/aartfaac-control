@@ -13,7 +13,7 @@ class Observation(object):
         self.antenna_array = self.parset.getString("Observation.antennaArray")
         self.antenna_set = self.parset.getString("Observation.antennaSet")
         self.sample_clock = self.parset.getInt("Observation.sampleClock")
-        self.valid = self.parset.getString("Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed") == "true"
+        self.valid = self.parset.getBool("Observation.ObservationControl.StationControl.aartfaacPiggybackAllowed")
 
     def save(self, filepath):
       self.parset.writeFile(filepath)
