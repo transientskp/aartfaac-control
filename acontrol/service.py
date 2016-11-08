@@ -76,7 +76,7 @@ def call_at_to(start_datetime, end_datetime, f, *args, **kwargs):
 class Options(usage.Options):
     optParameters = [
         ["lofar-dir", None, "/opt/lofar/var/run", "Directory to monitor for lofar parsets"],
-        ["lofar-pattern", None, "MCU001*", "Glob lofar pattern to select usable parsets"],
+        ["lofar-pattern", None, "mcu001*", "Glob lofar pattern to select usable parsets"],
         ["config-dir", None, "/opt/aartfaac/var/run", "Directory to monitor for lofar parsets"],
         ["config-pattern", None, "AARTFAAC*", "Glob aartfaac pattern to select usable parsets"],
     ]
