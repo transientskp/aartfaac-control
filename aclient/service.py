@@ -15,6 +15,11 @@ PROGRAMS = {
     "correlator": {
         "cmd":['numactl', '-i',  '0-1', '/home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC'],
         "env":{'DISPLAY':':0', 'GPU_FORCE_64BIT_PTR':'1', 'PLATFORM':'AMD Accelerated Parallel Processing', 'TYPE':'GPU'}
+    },
+
+    "atv": {
+        "cmd":['twistd', '-l', 'atv.log', 'atv'],
+        "env":os.environ
     }
 }
 
@@ -22,7 +27,7 @@ PROGRAMS = {
 class Options(usage.Options):
     optParameters = [
         ["port", None, 45000, "Port to listen on for incomming connections"],
-        ["program", None, None, "Program to start, one of {%s}" % (", ".join(PROGRAMS.keys()))],
+        ["program", None, None, "Program in {%s}" % (", ".join(PROGRAMS.keys()))],
         ["logdir", None, "/tmp/aclient", "Program logfiles directory"]
     ]
 
