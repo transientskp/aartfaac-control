@@ -69,7 +69,12 @@ class ConfigurationTestCase(TestWithConfig):
 
     def test_pipeline(self):
         cmd = self.config.pipelines(self.obs)
-        self.assertEqual(16, len(cmd))
+        self.assertEqual(15, len(cmd))
+
+
+    def test_atv(self):
+        cmd = self.config.atv(self.obs)
+        self.assertEqual(1, len(cmd))
 
 
 if __name__ == "__main__":

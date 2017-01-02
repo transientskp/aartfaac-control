@@ -75,14 +75,14 @@ class ServiceTestCase(unittest.TestCase):
         ws.startService()
         ws.processObservation(self.obs, connector=conn_fail)
         ws.stopService()
-        self.assertEqual(conn_fail.counter, 15)
+        self.assertEqual(conn_fail.counter, 16)
         
 
     def test_success_chain_minimal(self):
         
         def conn_fail(name, host, port, argv):
             d = defer.Deferred()
-            if name in "ais002-1 agc001":
+            if name in "ais002-2 agc001":
                 conn_fail.counter += 1
                 d.callback("success")
             else:
