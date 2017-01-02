@@ -16,14 +16,12 @@ PROGRAMS = {
         "cmd":['numactl', '-i',  '0-1', '/home/romein/projects/Triple-A/AARTFAAC/installed/AARTFAAC'],
         "env":{'DISPLAY':':0', 'GPU_FORCE_64BIT_PTR':'1', 'PLATFORM':'AMD Accelerated Parallel Processing', 'TYPE':'GPU'}
     },
-
-<<<<<<< HEAD
     "firmware": {
         "cmd":['/home/huizinga/SVN/Aartfaac/trunk/Software/sh/load_aartfaac_12_images.sh', '16'],
-=======
+        "env":os.environ
+    },
     "atv": {
         "cmd":['twistd', '-l', 'atv.log', 'atv'],
->>>>>>> 91a97fe... Add atv to client
         "env":os.environ
     }
 }
