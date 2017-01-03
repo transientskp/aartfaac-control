@@ -25,7 +25,7 @@ class Configuration(object):
 
 
     def is_valid(self):
-        return len(self._config["lba"]["subbands"]) == len(self._config["programs"]["pipelines"]["instances"])
+        return True
 
 
     def emaillist(self):
@@ -54,8 +54,8 @@ class Configuration(object):
     @staticmethod
     def merge(A, B):
         C = copy.deepcopy(B)
-        for k,v in A.iteritems():
-            C[k] = v
+        for k in A:
+            C[k] = A[k]
         return C
 
     
@@ -63,6 +63,7 @@ class Configuration(object):
         correlators = []
         configs = self._config["programs"]["correlators"]
         pipelines = self._config["programs"]["pipelines"]["instances"]
+        pipelines.append(self._config["programs"]["atv"])
         npipelines = len(pipelines)/len(configs["instances"])
 
         for i,cfg in enumerate(configs["instances"]):
@@ -84,11 +85,20 @@ class Configuration(object):
 
         return correlators
 
-    
+
+    def atv(self, obs):
+        atv = []
+        cfg = self._config["programs"]["atv"]
+        address = cfg["address"].split(':')
+        argv = cfg["argv"]
+        cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
+        atv.append((cfg["name"], address[0], int(address[1]), cmd))
+        return atv
+
+
     def pipelines(self, obs):
         pipelines = []
         configs = self._config["programs"]["pipelines"]
-        subbands = self._config["lba"]["subbands"]
 
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
@@ -98,10 +108,9 @@ class Configuration(object):
                 cfg["argv"] = {}
 
             argv = Configuration.merge(configs["argv"], cfg["argv"])
-            argv["subband"] = subbands[i]
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = port
-            argv["output"] = "file:/data/%i-%s.cal" % (subbands[i], obs.start_time.strftime("%Y%m%d%H%M"))
+            argv["output"] = "file:/data/%i-%s.cal" % (int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
 

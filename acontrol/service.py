@@ -139,6 +139,7 @@ class WorkerService(Service):
             log.msg("%s" % (result))
 
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
+        atv = stop_clients(self._activeconfig.atv(obs))
         correlators = stop_clients(self._activeconfig.correlators(obs))
         result = defer.DeferredList([pipelines, correlators], consumeErrors=True)
         result.addCallback(success)
@@ -181,7 +182,8 @@ class WorkerService(Service):
                 reactor.callLater(10, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
             pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
-            correlators = defer.DeferredList(pipelines, consumeErrors=True)
+            atv = [connector(*p) for p in self._activeconfig.atv(obs)]
+            correlators = defer.DeferredList(pipelines + atv, consumeErrors=True)
             correlators.addCallback(pass_1N, self._activeconfig.correlators(obs))
             result = defer.DeferredList([correlators], consumeErrors=True)
             result.addCallback(success)
