@@ -21,7 +21,7 @@ PROGRAMS = {
         "env":os.environ
     },
     "atv": {
-        "cmd":['twistd', '-l', 'atv.log', 'atv'],
+        "cmd":['twistd', 'atv'],
         "env":os.environ
     }
 }
