@@ -179,7 +179,7 @@ class WorkerService(Service):
                 if s:
                     header = "[+] %s" % (obs)
 
-                reactor.callLater(10, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
+                reactor.callLater(self.PRE_TIME, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
             pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
             atv = [connector(*p) for p in self._activeconfig.atv(obs)]
