@@ -62,7 +62,7 @@ class Configuration(object):
     def correlators(self, obs):
         correlators = []
         configs = self._config["programs"]["correlators"]
-        pipelines = self._config["programs"]["pipelines"]["instances"]
+        pipelines = copy.deepcopy(self._config["programs"]["pipelines"]["instances"])
         pipelines.append(self._config["programs"]["atv"])
         npipelines = len(pipelines)/len(configs["instances"])
 
