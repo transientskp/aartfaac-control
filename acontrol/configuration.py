@@ -89,8 +89,10 @@ class Configuration(object):
     def atv(self, obs):
         atv = []
         cfg = self._config["programs"]["atv"]
+        _, port = cfg["input"].split(':')
         address = cfg["address"].split(':')
         argv = cfg["argv"]
+        argv["port"] = port
         cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
         atv.append((cfg["name"], address[0], int(address[1]), cmd))
         return atv
