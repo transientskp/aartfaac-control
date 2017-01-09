@@ -63,7 +63,7 @@ class Configuration(object):
         correlators = []
         configs = self._config["programs"]["correlators"]
         pipelines = copy.deepcopy(self._config["programs"]["pipelines"]["instances"])
-        pipelines.append(self._config["programs"]["atv"])
+        pipelines.insert(0, self._config["programs"]["atv"])
         npipelines = len(pipelines)/len(configs["instances"])
 
         for i,cfg in enumerate(configs["instances"]):
