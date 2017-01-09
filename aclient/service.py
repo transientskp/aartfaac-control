@@ -20,7 +20,7 @@ PROGRAMS = {
         "env":os.environ
     },
     "atv": {
-        "cmd":['twistd', '-l', '/dev/null', 'atv'],
+        "cmd":['twistd', '-n', '-l', '-', 'atv'],
         "env":os.environ
     }
 }
