@@ -96,7 +96,7 @@ class ServiceTestCase(unittest.TestCase):
         ws.startService()
         ws.processObservation(self.obs, connector=conn_fail)
         ws.stopService()
-        self.assertEqual(conn_fail.counter, 2)
+        self.assertEqual(conn_fail.counter, 1)
 
 
     def test_stop(self):
