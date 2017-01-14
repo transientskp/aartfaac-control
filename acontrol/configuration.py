@@ -92,6 +92,7 @@ class Configuration(object):
         address = cfg["address"].split(':')
         argv = cfg["argv"]
         argv["port"] = port
+        argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
         cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
         atv.append((cfg["name"], address[0], int(address[1]), cmd))
         return atv
