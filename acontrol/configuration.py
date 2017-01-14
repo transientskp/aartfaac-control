@@ -62,8 +62,7 @@ class Configuration(object):
     def correlators(self, obs):
         correlators = []
         configs = self._config["programs"]["correlators"]
-        pipelines = copy.deepcopy(self._config["programs"]["pipelines"]["instances"])
-        pipelines.insert(0, self._config["programs"]["atv"])
+        pipelines = self._config["programs"]["pipelines"]["instances"]
         npipelines = len(pipelines)/len(configs["instances"])
 
         for i,cfg in enumerate(configs["instances"]):
@@ -101,6 +100,8 @@ class Configuration(object):
     def pipelines(self, obs):
         pipelines = []
         configs = self._config["programs"]["pipelines"]
+        atv_sb = self._config["programs"]["atv"]["argv"]["subband"]
+        atv_input = self._config["programs"]["atv"]["input"]
 
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
@@ -113,6 +114,10 @@ class Configuration(object):
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = port
             argv["output"] = "file:/data/%i-%s.cal" % (int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
+
+            if atv_sb == argv["subband"]:
+                argv["output"] += ",tcp:" + atv_input
+
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
 
