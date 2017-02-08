@@ -30,7 +30,7 @@ class Options(usage.Options):
     optParameters = [
         ["port", None, 45000, "Port to listen on for incomming connections"],
         ["program", None, None, "Program in {%s}" % (", ".join(PROGRAMS.keys()))],
-        ["numactl", None, "", "numactl arglist, e.g. '-C -i 0-1'"],
+        ["numactl", None, "", "numactl arglist, e.g. '-C 0-8 -i 0-1'"],
         ["logdir", None, "/tmp/aclient", "Program logfiles directory"]
     ]
 
