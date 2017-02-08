@@ -4,6 +4,7 @@ from twisted.internet import reactor
 from twisted.protocols import basic
 from twisted.python import log
 import signal
+import os
 
 from aclient.writeprocessprotocol import WriteProcessProtocol
 
@@ -53,9 +54,13 @@ class ControlProtocol(basic.LineReceiver):
 
     def start(self, argv):
         if not ControlProtocol.process or not ControlProtocol.process.is_running:
-            wp = WriteProcessProtocol(self.factory.cmd[0], self.factory.config['logdir'])
+            process_name = os.path.basename(self.factory.cmd[0])
+            wp = WriteProcessProtocol(process_name, self.factory.config['logdir'])
             wp.dstarted.addCallback(self.sendSuccess)
-            self.factory.spawner(wp, self.factory.cmd[0], self.factory.cmd + argv.split(), env=self.factory.env)
+            cmd = self.factory.cmd
+            if len(self.factory.config["numactl"]) > 0:
+                cmd = ['numactl'] + self.factory.config['numactl'].split() + cmd
+            self.factory.spawner(wp, cmd[0], cmd + argv.split(), env=self.factory.env)
             ControlProtocol.process = wp
         else:
             self.sendFailure("Still running")
