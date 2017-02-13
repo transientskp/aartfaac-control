@@ -102,6 +102,7 @@ class Configuration(object):
     def pipelines(self, obs):
         pipelines = []
         configs = self._config["programs"]["pipelines"]
+        antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
         atv_sb = self._config["programs"]["atv"]["argv"]["subband"]
         atv_input = self._config["programs"]["atv"]["input"]
 
@@ -115,6 +116,7 @@ class Configuration(object):
             argv = Configuration.merge(configs["argv"], cfg["argv"])
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = port
+            argv["antcfg"] = antcfg
             argv["output"] = "file:/data/%i-%s.cal" % (int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
 
             if atv_sb == argv["subband"]:
