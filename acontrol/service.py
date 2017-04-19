@@ -18,6 +18,8 @@ from twisted.python import filepath
 from twisted.python import usage
 from twisted.python import log
 from twisted.application.service import Service, MultiService
+import subprocess
+import numpy as np
 
 FIVE_MINUTES = 300
 SECONDS_IN_DAY = 86400
@@ -139,7 +141,7 @@ class WorkerService(Service):
             log.msg("%s" % (result))
 
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
-        atv = stop_clients(self._activeconfig.atv(obs))
+        #atv = stop_clients(self._activeconfig.atv(obs))
         correlators = stop_clients(self._activeconfig.correlators(obs))
         result = defer.DeferredList([pipelines, correlators], consumeErrors=True)
         result.addCallback(success)
@@ -181,10 +183,8 @@ class WorkerService(Service):
 
                 reactor.callLater(self.PRE_TIME, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
-            atv = [connector(*p) for p in self._activeconfig.atv(obs)]
-            pipelines = defer.DeferredList(atv, consumeErrors=True)
-            pipelines.addCallback(pass_1N, self._activeconfig.pipelines(obs))
-            correlators = defer.DeferredList([pipelines] + atv, consumeErrors=True)
+            pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
+            correlators = defer.DeferredList(pipelines, consumeErrors=True)
             correlators.addCallback(pass_1N, self._activeconfig.correlators(obs))
             result = defer.DeferredList([correlators], consumeErrors=True)
             result.addCallback(success)
@@ -226,6 +226,37 @@ class WorkerService(Service):
             self._email.updatelist(self._activeconfig.emaillist())
             # TODO: Implement setstations()
             # self._activeconfig.setstations(obs)
+
+            # Construct rspctl command to send to the stations
+            subbands = np.array ([x["argv"]["subband"] for x in 
+                                self._activeconfig._config["programs"]
+                                        ["pipelines"]["instances"]], dtype=int)
+            # NOTE: Reordering is necessary to maintain the order of setting of
+            # the bands via the rspctl command. See the aartfaac-control wiki.
+            # The following is hardcoded for 16bit mode, needs to be changed 
+            # for 8 or lower bit modes.
+            subbands = ','.join (np.concatenate ( (subbands[8:], np.zeros (10), subbands[0:8], np.zeros (10) )).astype(int).astype (str));
+            log.msg("Setting station SDO Subbands: " , subbands)
+
+            # Send rspctl command over ssh; assumes the following alias exists:
+            # alias pnl='pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg '
+            # NOTE: The pnl alias did not work with check_output(), hence using the full expansion.
+
+            log.msg(" ------ Existing SDO subbands: ------  " )
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo", stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
+
+            log.msg(" ------ Setting SDO subbands: ------  ")
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo=%s" % subbands, stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
+
+            # We need to wait for some time to let the registers settle before reading them back.
+            log.msg ('Waiting 10s...')
+            time.sleep (10);
+            log.msg(" ------ Setting SDO subbands: ------  ")
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo", stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
+            
             log.msg("Set AARTFAAC configuration to %s" % (config))
         else:
             log.msg("Invalid config: %s" % config)

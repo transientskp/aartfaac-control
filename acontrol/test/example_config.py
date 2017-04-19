@@ -12,7 +12,7 @@ EXAMPLE_CONFIG = """
     "mk.kuiack@gmail.com"
   ],
   "lba": {
-    "modes": ["lba_inner", "lba_outer"]
+    "modes": ["lba_inner", "lba_outer", "lba_sparse_even", "lba_sparse_odd"]
   },
   "programs": {
     "correlators": {
@@ -50,139 +50,162 @@ EXAMPLE_CONFIG = """
     },
     "atv": {
       "name": "aartfaac-tv",
-      "address": "10.144.6.13:45001",
+      "address": "10.144.6.13:45000",
       "input": "10.195.100.20:4000",
       "argv": {
-        "port": 5000,
+        "secret": "2yw9-vtjt-3jhr-9e64",
         "subband": 313
       }
     },
     "pipelines": {
       "argv": {
-        "antsigma": 4,
+        "antsigma": 3.0,
         "vissigma": 2.5,
-        "buffer": 70,
-        "nthreads": 6,
+        "buffer": 60,
         "v": 1
       },
       "instances": [
         {
-          "name": "ais002-2",
-          "address": "10.195.100.30:45002",
+          "name": "ais002-0",
+          "address": "10.144.6.15:45000",
+          "input": "10.195.100.30:4000",
+          "argv": {
+            "affinity": "2,4,6,2",
+            "subband": 313
+          }
+        },
+        {
+          "name": "ais002-1",
+          "address": "10.144.6.15:45001",
           "input": "10.195.100.30:4001",
           "argv": {
+            "affinity": "2,8,10,2",
             "subband": 314
           }
         },
         {
-          "name": "ais002-3",
-          "address": "10.195.100.30:45003",
+          "name": "ais002-2",
+          "address": "10.144.6.15:45002",
           "input": "10.195.100.30:4002",
           "argv": {
+            "affinity": "2,12,14,2",
             "subband": 315
+          }
+        },
+        {
+          "name": "ais002-3",
+          "address": "10.144.6.15:45003",
+          "input": "10.195.100.30:4003",
+          "argv": {
+            "affinity": "2,18,20,22,24,26,28,30,2",
+            "subband": 316
+          }
+        },
+        {
+          "name": "ais002-4",
+          "address": "10.144.6.15:45004",
+          "input": "10.195.100.30:4004",
+          "argv": {
+            "affinity": "2,1,3,2",
+            "subband": 317
+          }
+        },
+        {
+          "name": "ais002-5",
+          "address": "10.144.6.15:45005",
+          "input": "10.195.100.30:4005",
+          "argv": {
+            "affinity": "2,5,7,2",
+            "subband": 318
+          }
+        },
+        {
+          "name": "ais002-6",
+          "address": "10.144.6.15:45006",
+          "input": "10.195.100.30:4006",
+          "argv": {
+            "affinity": "2,9,11,2",
+            "subband": 319
+          }
+        },
+        {
+          "name": "ais002-7",
+          "address": "10.144.6.15:45007",
+          "input": "10.195.100.30:4007",
+          "argv": {
+            "affinity": "2,13,15,2",
+            "subband": 320
+          }
+        },
+        {
+          "name": "ais003-0",
+          "address": "10.144.6.19:45000",
+          "input": "10.195.100.40:4000",
+          "argv": {
+            "affinity": "2,4,6,2",
+            "subband": 295
           }
         },
         {
           "name": "ais003-1",
           "address": "10.144.6.16:45001",
-          "input": "10.195.100.40:4000",
+          "input": "10.195.100.40:4001",
           "argv": {
-            "subband": 316
+            "affinity": "2,8,10,2",
+            "subband": 296
           }
         },
         {
           "name": "ais003-2",
           "address": "10.144.6.16:45002",
-          "input": "10.195.100.40:4001",
+          "input": "10.195.100.40:4002",
           "argv": {
-            "subband": 317
+            "affinity": "2,12,14,2",
+            "subband": 297
           }
         },
         {
           "name": "ais003-3",
           "address": "10.144.6.16:45003",
-          "input": "10.195.100.40:4002",
+          "input": "10.195.100.40:4003",
           "argv": {
-            "subband": 318
-          }
-        },
-        {
-          "name": "ais004-1",
-          "address": "10.144.6.17:45001",
-          "input": "10.195.100.50:4000",
-          "argv": {
-            "subband": 319
-          }
-        },
-        {
-          "name": "ais004-2",
-          "address": "10.144.6.17:45002",
-          "input": "10.195.100.50:4001",
-          "argv": {
-            "subband": 320
-          }
-        },
-        {
-          "name": "ais004-3",
-          "address": "10.144.6.17:45003",
-          "input": "10.195.100.50:4002",
-          "argv": {
-            "subband": 295
-          }
-        },
-        {
-          "name": "ais005-1",
-          "address": "10.144.6.18:45001",
-          "input": "10.195.100.60:4000",
-          "argv": {
-            "subband": 296
-          }
-        },
-        {
-          "name": "ais005-2",
-          "address": "10.144.6.18:45002",
-          "input": "10.195.100.60:4001",
-          "argv": {
-            "subband": 297
-          }
-        },
-        {
-          "name": "ais005-3",
-          "address": "10.144.6.18:45003",
-          "input": "10.195.100.60:4002",
-          "argv": {
+            "affinity": "2,18,20,22,24,26,28,30,2",
             "subband": 298
           }
         },
         {
-          "name": "ais006-1",
-          "address": "10.144.6.19:45001",
-          "input": "10.195.100.70:4000",
+          "name": "ais003-4",
+          "address": "10.144.6.16:45004",
+          "input": "10.195.100.40:4004",
           "argv": {
+            "affinity": "2,1,3,2",
             "subband": 299
           }
         },
         {
-          "name": "ais006-2",
-          "address": "10.144.6.19:45002",
-          "input": "10.195.100.70:4001",
+          "name": "ais003-5",
+          "address": "10.144.6.16:45005",
+          "input": "10.195.100.40:4005",
           "argv": {
+            "affinity": "2,5,7,2",
             "subband": 300
           }
         },
         {
-          "name": "ais007-1",
-          "address": "10.144.6.20:45001",
-          "input": "10.195.100.80:4000",
+          "name": "ais003-6",
+          "address": "10.144.6.16:45006",
+          "input": "10.195.100.40:4006",
           "argv": {
+            "affinity": "2,9,11,2",
             "subband": 301
           }
         },
         {
-          "name": "ais007-2",
-          "address": "10.144.6.20:45002",
-          "input": "10.195.100.80:4001",
+          "name": "ais003-7",
+          "address": "10.144.6.16:45007",
+          "input": "10.195.100.40:4007",
           "argv": {
+            "affinity": "2,13,15,2",
             "subband": 302
           }
         }

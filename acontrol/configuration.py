@@ -103,8 +103,6 @@ class Configuration(object):
         pipelines = []
         configs = self._config["programs"]["pipelines"]
         antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
-        atv_sb = self._config["programs"]["atv"]["argv"]["subband"]
-        atv_input = self._config["programs"]["atv"]["input"]
 
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
@@ -118,9 +116,6 @@ class Configuration(object):
             argv["port"] = port
             argv["antcfg"] = antcfg
             argv["output"] = "file:/data/%i-%s.cal" % (int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
-
-            if atv_sb == argv["subband"]:
-                argv["output"] += ",tcp:" + atv_input
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
