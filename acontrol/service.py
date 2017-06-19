@@ -117,6 +117,11 @@ class WorkerService(Service):
         self._cfg_file.write(config)
         self._cfg_file.seek(0)
         self._activeconfig = Configuration(self._cfg_file.name)
+        
+        # Variable to link AARTFAAC applyConfiguration() to LOFAR enqueueObservation()
+        # Allows the arrival of a new AARTFAAC configuration to shut down an existing
+        # LOFAR observation, and restart it with the new AARTFAAC config parameters.
+        self._activeobservation = None 
         self._email.updatelist(self._activeconfig.emaillist())
 
 
@@ -138,6 +143,7 @@ class WorkerService(Service):
             return defer.DeferredList(l, consumeErrors=True)
 
         def success(result):
+            log.msg(' ---- End Observation success status ---- ')
             log.msg("%s" % (result))
 
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
@@ -145,6 +151,7 @@ class WorkerService(Service):
         correlators = stop_clients(self._activeconfig.correlators(obs))
         result = defer.DeferredList([pipelines, correlators], consumeErrors=True)
         result.addCallback(success)
+        return result
         
 
     def processObservation(self, obs, connector=start):
@@ -153,6 +160,42 @@ class WorkerService(Service):
         """
         if self._available:
             mlog.m("Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath))
+
+            print "In processObservation deepcopy:", obs
+
+            import copy
+            self._activeobservation = copy.deepcopy (obs)
+
+
+            # Construct rspctl command to send to the stations
+            subbands = np.array ([x["argv"]["subband"] for x in 
+                                self._activeconfig._config["programs"]
+                                        ["pipelines"]["instances"]], dtype=int)
+            # NOTE: Reordering is necessary to maintain the order of setting of
+            # the bands via the rspctl command. See the aartfaac-control wiki.
+            # The following is hardcoded for 16bit mode, needs to be changed 
+            # for 8 or lower bit modes.
+            subbands = ','.join (np.concatenate ( (subbands[8:], np.zeros (10), subbands[0:8], np.zeros (10) )).astype(int).astype (str));
+            log.msg("Setting station SDO Subbands: " , subbands)
+
+            # Send rspctl command over ssh; assumes the following alias exists:
+            # alias pnl='pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg '
+            # NOTE: The pnl alias did not work with check_output(), hence using the full expansion.
+
+            log.msg(" ------ Existing SDO subbands: ------  " )
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo | grep -A 4 SUCCESS", stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
+
+            log.msg(" ------ Setting SDO subbands: ------  ")
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo=%s" % subbands, stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
+
+            # We need to wait for some time to let the registers settle before reading them back.
+            log.msg ('Waiting 10s...')
+            time.sleep (10);
+            log.msg(" ------ Setting SDO subbands: ------  ")
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo | grep -A 4 SUCCESS", stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
 
             def pass_1N(result, V):
                 s = False
@@ -183,6 +226,7 @@ class WorkerService(Service):
 
                 reactor.callLater(self.PRE_TIME, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
+            print "In processObservation: ", self._activeobservation 
             pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
             correlators = defer.DeferredList(pipelines, consumeErrors=True)
             correlators.addCallback(pass_1N, self._activeconfig.correlators(obs))
@@ -224,38 +268,33 @@ class WorkerService(Service):
         if config.is_valid():
             self._activeconfig = config
             self._email.updatelist(self._activeconfig.emaillist())
-            # TODO: Implement setstations()
-            # self._activeconfig.setstations(obs)
 
-            # Construct rspctl command to send to the stations
-            subbands = np.array ([x["argv"]["subband"] for x in 
-                                self._activeconfig._config["programs"]
-                                        ["pipelines"]["instances"]], dtype=int)
-            # NOTE: Reordering is necessary to maintain the order of setting of
-            # the bands via the rspctl command. See the aartfaac-control wiki.
-            # The following is hardcoded for 16bit mode, needs to be changed 
-            # for 8 or lower bit modes.
-            subbands = ','.join (np.concatenate ( (subbands[8:], np.zeros (10), subbands[0:8], np.zeros (10) )).astype(int).astype (str));
-            log.msg("Setting station SDO Subbands: " , subbands)
+# TODO: Disabling dynamic scheduling of AARTFAAC parsets for now. Peeyush/09May17
+#            print self._activeobservation is None
+#            if (self._activeobservation is not None):
+#                # Obtain currently executing lofar observation object.
+#                # NOTE: Dont restart observations 80 secs prior to endtime. This is to 
+#                # prevent a racing condition between the already scheduled endObservation () by 
+#                # enqueueObservation() and the manually called processObservation() here.
+#                print config.start_time
+#                print self._activeobservation.start_time
+#
+#                if ( (config.start_time > self._activeobservation.start_time) and  \
+#                     (config.start_time < self._activeobservation.end_time - datetime.timedelta (seconds=80))):
+#    
+#                     # Close existing observation session
+#                     result = self.endObservation (self._activeobservation)
+#                    
+#    
+#                     # Regenerate appropriate filenames. Done by updating the 
+#                     # start_time of the active observation.
+#                     self._activeobservation.start_time = config.start_time
+#                     print "In applyConfiguration: ", self._activeobservation 
+#                     time.sleep(10)
+#                     print "Waited 10 secs..."
+#                     self.processObservation (self._activeobservation)
+#                     # result.addCallback (self.processObservation, self._activeobservation)
 
-            # Send rspctl command over ssh; assumes the following alias exists:
-            # alias pnl='pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg '
-            # NOTE: The pnl alias did not work with check_output(), hence using the full expansion.
-
-            log.msg(" ------ Existing SDO subbands: ------  " )
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo", stderr=subprocess.STDOUT, shell=True)
-            log.msg(res)
-
-            log.msg(" ------ Setting SDO subbands: ------  ")
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo=%s" % subbands, stderr=subprocess.STDOUT, shell=True)
-            log.msg(res)
-
-            # We need to wait for some time to let the registers settle before reading them back.
-            log.msg ('Waiting 10s...')
-            time.sleep (10);
-            log.msg(" ------ Setting SDO subbands: ------  ")
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo", stderr=subprocess.STDOUT, shell=True)
-            log.msg(res)
             
             log.msg("Set AARTFAAC configuration to %s" % (config))
         else:
