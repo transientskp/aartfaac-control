@@ -7,6 +7,10 @@ from twisted.application import internet
 from aclient.controlprotocol import ControlFactory
 
 PROGRAMS = {
+    "imager": {
+        "cmd":['aartfaac-imaging'],
+        "env":os.environ
+    },
     "pipeline": {
         "cmd":['aartfaac-calibration'],
         "env":os.environ

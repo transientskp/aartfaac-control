@@ -102,7 +102,10 @@ class Configuration(object):
     def pipelines(self, obs):
         pipelines = []
         configs = self._config["programs"]["pipelines"]
+        imager = self._config["programs"]["imagers"]["instances"]
+
         antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
+
 
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
@@ -115,7 +118,7 @@ class Configuration(object):
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = port
             argv["antcfg"] = antcfg
-            argv["output"] = "file:/data/%i-%s.cal" % (int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
+            argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
@@ -123,6 +126,33 @@ class Configuration(object):
         return pipelines
 
     
+    def imagers(self, obs):
+        imagers = []
+        configs = self._config["programs"]["imagers"]
+    
+        for i,cfg in enumerate (configs["instances"]):
+            address = cfg["address"].split(':')
+            _, port = cfg["input"].split(':')
+
+            if not cfg.has_key("argv"):
+                cfg["argv"] = {}
+
+            argv = Configuration.merge(configs["argv"], cfg["argv"])
+            argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+            argv["antcfg"] = antcfg
+            argv["subbands"] = cfg["subband"]
+
+            obsdir = cfg["imgpath"] + "/" +  obs.start_time.strftime ("%Y%m")
+            if not os.path.exists (obsdir):
+                os.makedirs (obsdir)
+
+            argv["output"] = "dir:%s" % obsdir
+
+            cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
+            imagers.append((cfg["name"], address[0], int(address[1]), cmd))
+
+        return imagers 
+            
     def __str__(self):
         return "[CFG - %s]" % (self.start_time)
 

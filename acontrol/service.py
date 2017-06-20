@@ -183,6 +183,7 @@ class WorkerService(Service):
 
                 reactor.callLater(self.PRE_TIME, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
+            imagers  = [connector (*p) for p in self._activeconfig.imagers(obs)]
             pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
             correlators = defer.DeferredList(pipelines, consumeErrors=True)
             correlators.addCallback(pass_1N, self._activeconfig.correlators(obs))
