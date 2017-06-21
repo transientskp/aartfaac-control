@@ -2,6 +2,7 @@ import time
 import datetime
 import math
 import copy
+import os
 
 try:
     import json
@@ -118,7 +119,7 @@ class Configuration(object):
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = port
             argv["antcfg"] = antcfg
-            argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
+            argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[0]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
@@ -130,6 +131,8 @@ class Configuration(object):
         imagers = []
         configs = self._config["programs"]["imagers"]
     
+        antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
+
         for i,cfg in enumerate (configs["instances"]):
             address = cfg["address"].split(':')
             _, port = cfg["input"].split(':')
@@ -139,17 +142,12 @@ class Configuration(object):
 
             argv = Configuration.merge(configs["argv"], cfg["argv"])
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
-            argv["antcfg"] = antcfg
-            argv["subbands"] = cfg["subband"]
-
-            obsdir = cfg["imgpath"] + "/" +  obs.start_time.strftime ("%Y%m")
-            if not os.path.exists (obsdir):
-                os.makedirs (obsdir)
-
-            argv["output"] = "dir:%s" % obsdir
+            argv["subbands"] = cfg["argv"]["subbands"]
+            argv["affinity"] = cfg["argv"]["affinity"]
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             imagers.append((cfg["name"], address[0], int(address[1]), cmd))
+            print imagers
 
         return imagers 
             

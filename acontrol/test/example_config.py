@@ -210,20 +210,20 @@ EXAMPLE_CONFIG = """
           }
         }
       ]
-    }
+    },
     "imagers": {
       "argv": {
-       "beammodel": "/data/beammodel/beammodel",
+       "beammodel": "/data/beammodel/beammodel"
       },
       "instances": [
         {
           "name": "ais001-0",
-          "address": "10.144.6.13:45001",
+          "address": "10.144.6.13:45000",
           "input": "10.195.100.20:4000",
           "argv": {
             "affinity": "0,3,0",
-            "imgpath" : "/data"
-            "subband" : "313,314,315,316,317,318,319,320,295,296,297,298,299,300,301,302"
+            "output" : "dir:/data",
+            "subbands" : "313,314,315,316,317,318,319,320,295,296,297,298,299,300,301,302"
           }
         }
       ]

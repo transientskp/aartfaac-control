@@ -140,6 +140,7 @@ class WorkerService(Service):
         def success(result):
             log.msg("%s" % (result))
 
+        imagers = stop_clients(self._activeconfig.imagers(obs))
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
         #atv = stop_clients(self._activeconfig.atv(obs))
         correlators = stop_clients(self._activeconfig.correlators(obs))
