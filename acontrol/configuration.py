@@ -86,18 +86,18 @@ class Configuration(object):
         return correlators
 
 
-    def atv(self, obs):
-        atv = []
-        cfg = self._config["programs"]["atv"]
-        _, port = cfg["input"].split(':')
-        address = cfg["address"].split(':')
-        argv = cfg["argv"]
-        argv["port"] = port
-        argv["duration"] = obs.duration.seconds
-        argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
-        cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
-        atv.append((cfg["name"], address[0], int(address[1]), cmd))
-        return atv
+#    def atv(self, obs):
+#        atv = []
+#        cfg = self._config["programs"]["atv"]
+#        _, port = cfg["input"].split(':')
+#        address = cfg["address"].split(':')
+#        argv = cfg["argv"]
+#        argv["port"] = port
+#        argv["duration"] = obs.duration.seconds
+#        argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+#        cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
+#        atv.append((cfg["name"], address[0], int(address[1]), cmd))
+#        return atv
 
 
     def pipelines(self, obs):
@@ -151,6 +151,23 @@ class Configuration(object):
 
         return imagers 
             
+
+    def atv (self, obs):
+        atv = []
+        configs = self._config["programs"]["atv"]
+
+        for i,cfg in enumerate (configs["instances"]):
+
+            if not cfg.has_key("argv"):
+                cfg["argv"] = {}
+
+            argv = Configuration.merge(configs["argv"], cfg["argv"])
+            address = cfg["address"].split(':')
+            cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
+            atv.append((cfg["name"], address[0], int(address[1]), cmd))
+
+        return atv
+
     def __str__(self):
         return "[CFG - %s]" % (self.start_time)
 

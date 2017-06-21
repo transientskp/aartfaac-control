@@ -48,15 +48,6 @@ EXAMPLE_CONFIG = """
         }
       ]
     },
-    "atv": {
-      "name": "aartfaac-tv",
-      "address": "10.144.6.13:45000",
-      "input": "10.195.100.20:4000",
-      "argv": {
-        "secret": "2yw9-vtjt-3jhr-9e64",
-        "subband": 313
-      }
-    },
     "pipelines": {
       "argv": {
         "antsigma": 3.0,
@@ -217,7 +208,7 @@ EXAMPLE_CONFIG = """
       },
       "instances": [
         {
-          "name": "ais001-0",
+          "name": "ais001-imager",
           "address": "10.144.6.13:45000",
           "input": "10.195.100.20:4000",
           "argv": {
@@ -225,6 +216,19 @@ EXAMPLE_CONFIG = """
             "output" : "dir:/data",
             "subbands" : "313,314,315,316,317,318,319,320,295,296,297,298,299,300,301,302"
           }
+        }
+      ]
+    },
+    "atv": {
+      "argv": {
+       "secret": "2yw9-vtjt-3jhr-9e64"
+      },
+      "instances": [
+        {
+          "name": "ais001-atv",
+          "address": "10.144.6.13:45001",
+          "host": "10.195.100.20",
+          "port": "9000"
         }
       ]
     }
