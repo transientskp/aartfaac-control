@@ -8,7 +8,7 @@ from aclient.controlprotocol import ControlFactory
 
 PROGRAMS = {
     "atv": {
-        "cmd":['aartfaac-tv'],
+        "cmd":['aartfaac-tv.py'],
         "env":os.environ
     },
     "imager": {
@@ -25,10 +25,6 @@ PROGRAMS = {
     },
     "firmware": {
         "cmd":['/home/huizinga/SVN/Aartfaac/trunk/Software/sh/load_aartfaac_12_images.sh', '16'],
-        "env":os.environ
-    },
-    "atv": {
-        "cmd":['twistd', '-n', '-l', '-', 'atv'],
         "env":os.environ
     }
 }

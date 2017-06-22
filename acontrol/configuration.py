@@ -165,6 +165,7 @@ class Configuration(object):
             address = cfg["address"].split(':')
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             atv.append((cfg["name"], address[0], int(address[1]), cmd))
+            print atv
 
         return atv
 
