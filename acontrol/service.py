@@ -140,11 +140,16 @@ class WorkerService(Service):
         def success(result):
             log.msg("%s" % (result))
 
+        # layer1: [imagers, pipelines, atv, correlators]
+        #            |
+        #       0-N  |
+        #            |
+        # layer2: result
         imagers = stop_clients(self._activeconfig.imagers(obs))
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
         atv = stop_clients(self._activeconfig.atv(obs))
         correlators = stop_clients(self._activeconfig.correlators(obs))
-        result = defer.DeferredList([pipelines, correlators], consumeErrors=True)
+        result = defer.DeferredList([pipelines, correlators, imagers, atv], consumeErrors=True)
         result.addCallback(success)
         
 
@@ -184,13 +189,26 @@ class WorkerService(Service):
 
                 reactor.callLater(self.PRE_TIME, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
-            imagers  = [connector (*p) for p in self._activeconfig.imagers(obs)]
-            atv = [connector (*p) for p in self._activeconfig.atv(obs)]
-            pipelines = [connector(*p) for p in self._activeconfig.pipelines(obs)]
-            correlators = defer.DeferredList(pipelines, consumeErrors=True)
-            correlators.addCallback(pass_1N, self._activeconfig.correlators(obs))
-            result = defer.DeferredList([correlators], consumeErrors=True)
-            result.addCallback(success)
+            # layer1: imagers (flattened list of all imagers)
+            #            |
+            #       1-N  |
+            #            |
+            # layer2: [pipelines, atv] (flattened list of all pipelines and atv instances)
+            #            |
+            #       1-N  |
+            #            |
+            # layer3: correlators (flattened list of all correlators
+            #            |
+            #       0-N  |
+            #            |
+            # layer4: result
+            layer1 = [connector (*p) for p in self._activeconfig.imagers(obs)]
+            layer2 = defer.DeferredList(layer1, consumeErrors=True)
+            layer2.addCallback(pass_1N, self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs))
+            layer3 = defer.DeferredList([layer2], consumeErrors=True)
+            layer3.addCallback(pass_1N, self._activeconfig.correlators(obs))
+            layer4 = defer.DeferredList([layer3], consumeErrors=True)
+            layer4.addCallback(success)
         else:
             log.msg("Skipping %s" % (obs))
 

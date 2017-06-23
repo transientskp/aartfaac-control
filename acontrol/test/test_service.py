@@ -54,14 +54,14 @@ class ServiceTestCase(unittest.TestCase):
         ws.startService()
         ws.processObservation(self.obs, connector=conn_pass)
         ws.stopService()
-        self.assertEqual(conn_pass.counter, 18)
+        self.assertEqual(conn_pass.counter, 20)
 
 
     def test_fail_chain(self):
         
         def conn_fail(name, host, port, argv):
             d = defer.Deferred()
-            if "ais002" in name:
+            if name in "agc001 agc002":
                 d.errback(Exception("fail"))
             else:
                 conn_fail.counter += 1
@@ -75,7 +75,7 @@ class ServiceTestCase(unittest.TestCase):
         ws.startService()
         ws.processObservation(self.obs, connector=conn_fail)
         ws.stopService()
-        self.assertEqual(conn_fail.counter, 16)
+        self.assertEqual(conn_fail.counter, 18)
         
 
     def test_success_chain_minimal(self):
@@ -113,10 +113,7 @@ class ServiceTestCase(unittest.TestCase):
         ws.startService()
         ws.endObservation(self.obs, connector=conn)
         ws.stopService()
-        self.assertEqual(conn.counter, 18)
-
-
-
+        self.assertEqual(conn.counter, 20)
 
 
     def tearDown(self):
