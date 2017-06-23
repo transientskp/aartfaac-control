@@ -10,8 +10,8 @@ from aclient.writeprocessprotocol import WriteProcessProtocol
 
 class WriteProcessTestCase(unittest.TestCase):
     def setUp(self):
-        self.cmd = ['ls', '/tmp']
-        self.proto = WriteProcessProtocol('ls', '/tmp')
+        self.cmd = ['python', '--version']
+        self.proto = WriteProcessProtocol('python', '.')
 
     def test_init(self):
         self.assertFalse(self.proto.is_running)
