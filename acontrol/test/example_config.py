@@ -221,7 +221,8 @@ EXAMPLE_CONFIG = """
     },
     "atv": {
       "argv": {
-       "secret": "2yw9-vtjt-3jhr-9e64"
+       "secret": "2yw9-vtjt-3jhr-9e64",
+       "const": "/home/prasad/soft/src/aartfaac-tv/data/constellations.json"
       },
       "instances": [
         {

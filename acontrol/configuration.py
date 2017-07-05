@@ -142,6 +142,17 @@ class Configuration(object):
 
             argv = Configuration.merge(configs["argv"], cfg["argv"])
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
+            # Add a subdirectory based on the current date, to the file path 
+            # specified in the output config keyword, if available.
+            outputs = argv["output"].split(',') 
+            dirname = datetime.datetime.utcnow().strftime ("%Y%m%d")
+            for i,x in enumerate (outputs):
+                if "dir" in x:
+                    if x[-1] == '/':
+                        outputs[i] = x + dirname
+                    else:
+                        outputs[i] = x + '/' + dirname
+            argv["output" = ','.join(outputs)
             argv["subbands"] = cfg["argv"]["subbands"]
             argv["affinity"] = cfg["argv"]["affinity"]
 
