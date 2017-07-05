@@ -152,7 +152,7 @@ class Configuration(object):
                         outputs[i] = x + dirname
                     else:
                         outputs[i] = x + '/' + dirname
-            argv["output" = ','.join(outputs)
+            argv["output"] = ','.join(outputs)
             argv["subbands"] = cfg["argv"]["subbands"]
             argv["affinity"] = cfg["argv"]["affinity"]
 
