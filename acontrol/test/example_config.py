@@ -7,13 +7,16 @@ EXAMPLE_CONFIG = """
   "starttime": "now",
   "email": [
     "folkerthuizinga@gmail.com",
-    "hsuyeep@gmail.com",
     "antonia.rowlinson@gmail.com",
-    "mk.kuiack@gmail.com"
+    "mk.kuiack@gmail.com",
+    "hsuyeep@gmail.com"
   ],
   "lba": {
     "modes": ["lba_inner", "lba_outer", "lba_sparse_even", "lba_sparse_odd"]
   },
+  "bitmode": 16,
+  "subbands": ["200","201","202","203","204","205","206","207",
+               "224","225","226","227","228","229","230","231"],
   "programs": {
     "correlators": {
       "argv": {
@@ -61,8 +64,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.15:45000",
           "input": "10.195.100.30:4000",
           "argv": {
-            "affinity": "2,4,6,2",
-            "subband": 313
+            "affinity": "2,4,6,2"
           }
         },
         {
@@ -70,8 +72,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.15:45001",
           "input": "10.195.100.30:4001",
           "argv": {
-            "affinity": "2,8,10,2",
-            "subband": 314
+            "affinity": "2,8,10,2"
           }
         },
         {
@@ -79,8 +80,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.15:45002",
           "input": "10.195.100.30:4002",
           "argv": {
-            "affinity": "2,12,14,2",
-            "subband": 315
+            "affinity": "2,12,14,2"
           }
         },
         {
@@ -88,8 +88,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.16:45000",
           "input": "10.195.100.40:4000",
           "argv": {
-            "affinity": "2,18,20,22,24,26,28,30,2",
-            "subband": 316
+            "affinity": "2,18,20,22,24,26,28,30,2"
           }
         },
         {
@@ -97,8 +96,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.16:45001",
           "input": "10.195.100.40:4001",
           "argv": {
-            "affinity": "2,1,3,2",
-            "subband": 317
+            "affinity": "2,1,3,2"
           }
         },
         {
@@ -106,8 +104,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.16:45002",
           "input": "10.195.100.40:4002",
           "argv": {
-            "affinity": "2,5,7,2",
-            "subband": 318
+            "affinity": "2,5,7,2"
           }
         },
         {
@@ -115,8 +112,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.17:45000",
           "input": "10.195.100.50:4000",
           "argv": {
-            "affinity": "2,9,11,2",
-            "subband": 319
+            "affinity": "2,9,11,2"
           }
         },
         {
@@ -124,8 +120,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.17:45001",
           "input": "10.195.100.50:4001",
           "argv": {
-            "affinity": "2,13,15,2",
-            "subband": 320
+            "affinity": "2,13,15,2"
           }
         },
         {
@@ -133,8 +128,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.17:45002",
           "input": "10.195.100.50:4002",
           "argv": {
-            "affinity": "2,4,6,2",
-            "subband": 295
+            "affinity": "2,4,6,2"
           }
         },
         {
@@ -142,8 +136,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.18:45000",
           "input": "10.195.100.60:4000",
           "argv": {
-            "affinity": "2,8,10,2",
-            "subband": 296
+            "affinity": "2,8,10,2"
           }
         },
         {
@@ -151,8 +144,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.18:45001",
           "input": "10.195.100.60:4001",
           "argv": {
-            "affinity": "2,12,14,2",
-            "subband": 297
+            "affinity": "2,12,14,2"
           }
         },
         {
@@ -160,8 +152,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.18:45002",
           "input": "10.195.100.60:4002",
           "argv": {
-            "affinity": "2,18,20,22,24,26,28,30,2",
-            "subband": 298
+            "affinity": "2,18,20,22,24,26,28,30,2"
           }
         },
         {
@@ -169,8 +160,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.19:45000",
           "input": "10.195.100.70:4000",
           "argv": {
-            "affinity": "2,1,3,2",
-            "subband": 299
+            "affinity": "2,1,3,2"
           }
         },
         {
@@ -178,8 +168,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.19:45001",
           "input": "10.195.100.70:4001",
           "argv": {
-            "affinity": "2,5,7,2",
-            "subband": 300
+            "affinity": "2,5,7,2"
           }
         },
         {
@@ -187,8 +176,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.20:45000",
           "input": "10.195.100.80:4000",
           "argv": {
-            "affinity": "2,9,11,2",
-            "subband": 301
+            "affinity": "2,9,11,2"
           }
         },
         {
@@ -196,8 +184,7 @@ EXAMPLE_CONFIG = """
           "address": "10.144.6.20:45001",
           "input": "10.195.100.80:4001",
           "argv": {
-            "affinity": "2,13,15,2",
-            "subband": 302
+            "affinity": "2,13,15,2"
           }
         }
       ]
@@ -213,8 +200,7 @@ EXAMPLE_CONFIG = """
           "input": "10.195.100.20:4000",
           "argv": {
             "affinity": "0,3,0",
-            "output" : "dir:/data,srv:9000",
-            "subbands" : "313,314,315,316,317,318,319,320,295,296,297,298,299,300,301,302"
+            "output" : "dir:/data,srv:9000"
           }
         }
       ]

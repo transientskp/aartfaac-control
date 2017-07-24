@@ -103,6 +103,11 @@ class Configuration(object):
     def pipelines(self, obs):
         pipelines = []
         configs = self._config["programs"]["pipelines"]
+        nsubbands = len (self._config['subbands'])
+
+        if nsubbands > len (configs['instances']):
+            print "Calibration pipelines specified only for %d of %d subbands." % (len (configs['instances']), nsubbands)
+            
         imager = self._config["programs"]["imagers"]["instances"]
 
         antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
@@ -119,6 +124,13 @@ class Configuration(object):
             argv["antpos"] = "/home/fhuizing/soft/release/share/aartfaac/antennasets/%s.dat" % (obs.antenna_set.lower())
             argv["port"] = port
             argv["antcfg"] = antcfg
+
+            # Break if we run out of specified subbands, 
+            # even if we have pipeline specifications.
+            if i > nsubbands:
+                break;
+
+            argv['subband'] = self._config['subbands'][i]
             argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[0]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
@@ -130,7 +142,7 @@ class Configuration(object):
     def imagers(self, obs):
         imagers = []
         configs = self._config["programs"]["imagers"]
-    
+
         antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
 
         for i,cfg in enumerate (configs["instances"]):
@@ -153,7 +165,7 @@ class Configuration(object):
                     else:
                         outputs[i] = x + '/' + dirname
             argv["output"] = ','.join(outputs)
-            argv["subbands"] = cfg["argv"]["subbands"]
+            argv["subbands"] = ','.join (self._config['subbands'])
             argv["affinity"] = cfg["argv"]["affinity"]
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
@@ -178,6 +190,7 @@ class Configuration(object):
 
         return atv
 
+        
     def __str__(self):
         return "[CFG - %s]" % (self.start_time)
 

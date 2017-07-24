@@ -248,34 +248,44 @@ class WorkerService(Service):
             # TODO: Implement setstations()
             # self._activeconfig.setstations(obs)
 
-            # Construct rspctl command to send to the stations
-            subbands = np.array ([x["argv"]["subband"] for x in 
-                                self._activeconfig._config["programs"]
-                                        ["pipelines"]["instances"]], dtype=int)
-            # NOTE: Reordering is necessary to maintain the order of setting of
-            # the bands via the rspctl command. See the aartfaac-control wiki.
-            # The following is hardcoded for 16bit mode, needs to be changed 
-            # for 8 or lower bit modes.
-            subbands = ','.join (np.concatenate ( (subbands[8:], np.zeros (10), subbands[0:8], np.zeros (10) )).astype(int).astype (str));
+            # Careful with the subband order here...
+            # In 16b mode:  
+            # agc002 = [sb00-sb07], 
+            # agc001 = [sb18-sb25]
+            # In  8b mode:  
+            # agc002 = [sb00, sb36, sb01, sb37, sb02, sb38, sb03, sb39, 
+            #           sb04, sb40, sb05, sb41, sb06, sb42, sb07, sb43]
+            # agc001 = [sb18, sb54, sb19, sb55, sb20, sb56, sb21, sb57, 
+            #           sb22, sb58, sb23, sb59, sb24, sb60, sb25, sb61]
+            if self._activeconfig._config['bitmode'] == 16:
+                subbands = ",".join(
+                         self._activeconfig._config['subbands'][8:16] + 
+              ["0"]*10 + self._activeconfig._config['subbands'][0:8])
+
+            elif self._activeconfig._config['bitmode'] == 8:
+                subbands=",".join(
+                        self._activeconfig._config['subbands'][ 0:2:16] +
+             ["0"]*10 + self._activeconfig._config['subbands'][16:2:32] + 
+             ["0"]*10 + self._activeconfig._config['subbands'][ 1:2:16] +
+             ["0"]*10 + self._activeconfig._config['subbands'][17:2:32])
+
             log.msg("Setting station SDO Subbands: " , subbands)
 
-            # Send rspctl command over ssh; assumes the following alias exists:
-            # alias pnl='pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg '
-            # NOTE: The pnl alias did not work with check_output(), hence using the full expansion.
-
+            # Send rspctl command over ssh; 
             log.msg(" ------ Existing SDO subbands: ------  " )
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo", stderr=subprocess.STDOUT, shell=True)
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg /opt/lofar/bin/rspctl --sdo | grep SUCCESS -A 3", stderr=subprocess.STDOUT, shell=True)
             log.msg(res)
 
             log.msg(" ------ Setting SDO subbands: ------  ")
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo=%s" % subbands, stderr=subprocess.STDOUT, shell=True)
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg /opt/lofar/bin/rspctl --sdo=%s" % subbands, stderr=subprocess.STDOUT, shell=True)
             log.msg(res)
 
-            # We need to wait for some time to let the registers settle before reading them back.
+            # We need to wait for some time to let the registers settle before 
+            # reading them back.
             log.msg ('Waiting 10s...')
             time.sleep (10);
-            log.msg(" ------ Setting SDO subbands: ------  ")
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/pssh.cfg /opt/lofar/bin/rspctl --sdo", stderr=subprocess.STDOUT, shell=True)
+            log.msg(" ------ Current SDO subbands: ------  ")
+            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg /opt/lofar/bin/rspctl --sdo | grep SUCCESS -A 3", stderr=subprocess.STDOUT, shell=True)
             log.msg(res)
             
             log.msg("Set AARTFAAC configuration to %s" % (config))
