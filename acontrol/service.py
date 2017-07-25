@@ -18,7 +18,6 @@ from twisted.python import filepath
 from twisted.python import usage
 from twisted.python import log
 from twisted.application.service import Service, MultiService
-import subprocess
 import numpy as np
 
 FIVE_MINUTES = 300
@@ -189,6 +188,7 @@ class WorkerService(Service):
 
                 reactor.callLater(self.PRE_TIME, self._email.send, header, mlog.flush(), [obs.filepath, self._activeconfig.filepath])
 
+
             # layer1: imagers (flattened list of all imagers)
             #            |
             #       1-N  |
@@ -245,49 +245,7 @@ class WorkerService(Service):
         if config.is_valid():
             self._activeconfig = config
             self._email.updatelist(self._activeconfig.emaillist())
-            # TODO: Implement setstations()
-            # self._activeconfig.setstations(obs)
-
-            # Careful with the subband order here...
-            # In 16b mode:  
-            # agc002 = [sb00-sb07], 
-            # agc001 = [sb18-sb25]
-            # In  8b mode:  
-            # agc002 = [sb00, sb36, sb01, sb37, sb02, sb38, sb03, sb39, 
-            #           sb04, sb40, sb05, sb41, sb06, sb42, sb07, sb43]
-            # agc001 = [sb18, sb54, sb19, sb55, sb20, sb56, sb21, sb57, 
-            #           sb22, sb58, sb23, sb59, sb24, sb60, sb25, sb61]
-            if self._activeconfig._config['bitmode'] == 16:
-                subbands = ",".join(
-                         self._activeconfig._config['subbands'][8:16] + 
-              ["0"]*10 + self._activeconfig._config['subbands'][0:8])
-
-            elif self._activeconfig._config['bitmode'] == 8:
-                subbands=",".join(
-                        self._activeconfig._config['subbands'][ 0:2:16] +
-             ["0"]*10 + self._activeconfig._config['subbands'][16:2:32] + 
-             ["0"]*10 + self._activeconfig._config['subbands'][ 1:2:16] +
-             ["0"]*10 + self._activeconfig._config['subbands'][17:2:32])
-
-            log.msg("Setting station SDO Subbands: " , subbands)
-
-            # Send rspctl command over ssh; 
-            log.msg(" ------ Existing SDO subbands: ------  " )
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg /opt/lofar/bin/rspctl --sdo | grep SUCCESS -A 3", stderr=subprocess.STDOUT, shell=True)
-            log.msg(res)
-
-            log.msg(" ------ Setting SDO subbands: ------  ")
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg /opt/lofar/bin/rspctl --sdo=%s" % subbands, stderr=subprocess.STDOUT, shell=True)
-            log.msg(res)
-
-            # We need to wait for some time to let the registers settle before 
-            # reading them back.
-            log.msg ('Waiting 10s...')
-            time.sleep (10);
-            log.msg(" ------ Current SDO subbands: ------  ")
-            res = subprocess.check_output("pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg /opt/lofar/bin/rspctl --sdo | grep SUCCESS -A 3", stderr=subprocess.STDOUT, shell=True)
-            log.msg(res)
-            
+            self._activeconfig.setstation_subbands ()
             log.msg("Set AARTFAAC configuration to %s" % (config))
         else:
             log.msg("Invalid config: %s" % config)

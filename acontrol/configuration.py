@@ -3,6 +3,10 @@ import datetime
 import math
 import copy
 import os
+from twisted.python import log
+import string
+import subprocess
+import numpy as np
 
 try:
     import json
@@ -59,6 +63,93 @@ class Configuration(object):
             C[k] = A[k]
         return C
 
+    def setstation_subbands (self):
+        # The ordered set of the subband numbers as specified in the AARTFAAC 
+        # configuration file need to be translated into the order to be
+        # written to the hardware. This is dependent upon the order in which 
+        # the correlator instances are defined in the AARTFAAC config file.
+
+        # if the subbands as reported by the hardware (rspctl) are labelled 
+        # from sb00-sb35 (16-bit mode), then
+        # In 16b mode:  
+        # agc002 = [sb00-sb07], 
+        # agc001 = [sb18-sb25]
+        # In  8b mode:  
+        # agc002 = [sb00, sb36, sb01, sb37, sb02, sb38, sb03, sb39, 
+        #           sb04, sb40, sb05, sb41, sb06, sb42, sb07, sb43]
+        # agc001 = [sb18, sb54, sb19, sb55, sb20, sb56, sb21, sb57, 
+        #           sb22, sb58, sb23, sb59, sb24, sb60, sb25, sb61]
+        if self._config['bitmode'] == 16:
+            subbands = ",".join(
+                     self._config['subbands'][8:16] + 
+          ["0"]*10 + self._config['subbands'][0:8]  +
+          ["0"]*10)
+
+        elif self._config['bitmode'] == 8:
+            subbands=",".join(
+                    self._config['subbands'][ 0:2:16] +
+         ["0"]*10 + self._config['subbands'][16:2:32] + 
+         ["0"]*10 + self._config['subbands'][ 1:2:16] +
+         ["0"]*10 + self._config['subbands'][17:2:32])
+
+        log.msg("---> Checking currently set station SDO Subbands.")
+
+        # Send rspctl command over ssh; 
+        res = subprocess.check_output("\
+           pssh -i -O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null \
+               -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg \
+                /opt/lofar/bin/rspctl --sdo | grep SUCCESS -A 3",
+                stderr=subprocess.STDOUT, shell=True)
+
+        # Check if the currently set subbands match what we need to set.
+        ind = 0
+        sblist = {}
+        do_setsub = 0
+        for stn in range (0,12):
+            ind += string.find (res[ind:], 'CS0')
+            stname = res[ind:ind+6]
+            ind += string.find (res[ind:], 'RCU[ 0]')
+            # discard end square brackets.
+            sblist = res[ind:].split('\n')[1][2:-2].split(' ') 
+            
+            # Check for consistency with current settings.
+            currsdo = ",".join (sblist[0:8] + ["0"]*10 + sblist[18:26] + ["0"]*10)
+            newsdo  = ",".join([str(x) for x in (np.array ([int(x) for x in subbands.split(',')]) * 2)])
+            if newsdo != currsdo:
+                log.msg ("---> Discrepancy found in station %s!" % stname)
+                log.msg ("  Sb. reported by hardware: %s" % currsdo)
+                log.msg ("  Sb. in config file      : %s" % newsdo)
+                do_setsub = 1
+                log.msg(res)
+                break
+            else:
+                log.msg ("---> Station %s is already set.\n   \
+                Current sb: %s\n   Desired sb: %s" % (stname, currsdo, newsdo))
+
+        if do_setsub:
+            log.msg(" ------ Setting SDO subbands: ------  ")
+            res = subprocess.check_output("\
+                pssh -i -O StrictHostKeyChecking=no \
+                -O UserKnownHostsFile=/dev/null \
+                -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg \
+                /opt/lofar/bin/rspctl --sdo=%s" % subbands, 
+                stderr=subprocess.STDOUT, shell=True)
+            log.msg(res)
+    
+            # We need to wait for some time to let the registers settle before 
+            # reading them back.
+            log.msg ('... Waiting 10s ...')
+            time.sleep (10);
+            log.msg(" ------ Current SDO subbands: ------  ")
+            res = subprocess.check_output("\
+                pssh -i -O StrictHostKeyChecking=no \
+                -O UserKnownHostsFile=/dev/null \
+                -O GlobalKnownHostsFile=/dev/null -h ~/psshaartfaac.cfg \
+                /opt/lofar/bin/rspctl --sdo | grep SUCCESS -A 3", \
+                stderr=subprocess.STDOUT, shell=True)
+
+            log.msg(res)
+        
     
     def correlators(self, obs):
         correlators = []
@@ -142,6 +233,10 @@ class Configuration(object):
     def imagers(self, obs):
         imagers = []
         configs = self._config["programs"]["imagers"]
+
+        # Set station subbands, in case the hardware config has changed 
+        # since the AARTFAAC configuration was applied.
+        self.setstation_subbands ()
 
         antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
 
