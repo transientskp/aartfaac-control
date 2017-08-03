@@ -28,6 +28,7 @@ def start(name, host, port, argv):
     d = defer.Deferred()
     f = ControlFactory(name, argv, d, True)
     reactor.connectTCP(host, port, f)
+    log.msg ('<-- start: name: %s, argv %s' % (name, argv))
     return d
 
 def stop(name, host, port, argv):
@@ -108,6 +109,7 @@ class WorkerService(Service):
         self._available = False
         self._parsets = {}
         self._configs = {}
+        self._configobjs = {}
         self._prune_call = LoopingCall(self.prune)
         self._fnpattern = options['lofar-pattern']
         self._aapattern = options['config-pattern']
@@ -146,9 +148,10 @@ class WorkerService(Service):
         # layer2: result
         imagers = stop_clients(self._activeconfig.imagers(obs))
         pipelines = stop_clients(self._activeconfig.pipelines(obs))
+        vissinks = stop_clients(self._activeconfig.vissinks(obs))
         atv = stop_clients(self._activeconfig.atv(obs))
         correlators = stop_clients(self._activeconfig.correlators(obs))
-        result = defer.DeferredList([pipelines, correlators, imagers, atv], consumeErrors=True)
+        result = defer.DeferredList([pipelines, vissinks, correlators, imagers, atv], consumeErrors=True)
         result.addCallback(success)
         
 
@@ -203,9 +206,18 @@ class WorkerService(Service):
             #            |
             # layer4: result
             layer1 = [connector (*p) for p in self._activeconfig.imagers(obs)]
-            layer2 = defer.DeferredList(layer1, consumeErrors=True)
-            layer2.addCallback(pass_1N, self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs))
-            layer3 = defer.DeferredList([layer2], consumeErrors=True)
+
+            if layer1:
+                layer2 = defer.DeferredList(layer1, consumeErrors=True)
+                layer2.addCallback(pass_1N, self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs) + \
+                                         self._activeconfig.vissinks (obs))
+                layer3 = defer.DeferredList([layer2], consumeErrors=True)
+            else:
+                log.msg ('<-- Found no imagers in config file.')
+                layer2 = [connector (*p) for p in self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs) + \
+                                         self._activeconfig.vissinks (obs)]
+                layer3 = defer.DeferredList(layer2, consumeErrors=True)
+
             layer3.addCallback(pass_1N, self._activeconfig.correlators(obs))
             layer4 = defer.DeferredList([layer3], consumeErrors=True)
             layer4.addCallback(success)
@@ -226,10 +238,45 @@ class WorkerService(Service):
 
             key = hash(obs)
 
+            # Special check only for HBA observations.
+            if obs.antenna_array == "HBA":
+                # Check if the AARTFAAC configuration corresponding to the time of
+                # the observation has a matching specification in terms of 
+                # antenna array. Added to allow specific HBA observations.
+    
+                # Find the config among those available, that would be active when
+                #  this observation is scheduled.
+                log.msg ('<-- Found an HBA observation. Checking for corresponding config.')
+                min_timdel= datetime.timedelta.max
+                ind = None
+                for k, v in self._configs.iteritems():
+                    cfgtim = datetime.datetime.fromtimestamp(v.getTime())
+                    log.msg ('cfgtim: %s, obs time: %s' % (cfgtim, obs.start_time));
+                    if cfgtim > obs.start_time:
+                        break
+                    timdel = obs.start_time - cfgtim
+                    if timdel < min_timdel:
+                        min_timdel = timdel;
+                        ind = k;
+                    
+                if ind:
+                    log.msg ('<-- Closest AARTFAAC config. (%s) is %s seconds before observation. key: %s' % 
+                                (str(self._configs[ind]), min_timdel.seconds, ind))
+                    log.msg ('<-- self._configobj keys: %s' % self._configobjs.keys())
+                    log.msg ('<-- self._configobj[ind] keys: %s' % self._configobjs[ind]._config.keys())
+
+                    # Ignore this observation if no suitable config is found.
+                    if not "hba" in self._configobjs[ind]._config:
+                        call = None
+                        log.msg("Ignoring %s: mode: %s" % (filepath.path, self._configobjs[ind]._config["hba"]["modes"]))
+                        return
+                    
+                                   
             if key in self._parsets and self._parsets[key].active():
                 log.msg("Already scheduled %s; ignoring" % (obs))
             elif key not in self._parsets:
-                call = call_at_to(obs.start_time - datetime.timedelta(seconds=self.PRE_TIME), obs.end_time, self.processObservation, obs)
+                call = call_at_to(obs.start_time - datetime.timedelta(seconds=self.PRE_TIME), 
+                            obs.end_time, self.processObservation, obs)
                 if call:
                     log.msg("Scheduling observation %s (%s)" % (obs, filepath.path))
                     self._parsets[key] = call
@@ -268,9 +315,11 @@ class WorkerService(Service):
             log.msg("Rescheduling config update %s" % (filepath.path))
             self._configs[filepath.path].cancel()
             self._configs[filepath.path] = call
+            self._configobjs[filepath.path] = cfg
         elif call and filepath.path not in self._configs:
             log.msg("Scheduling config update %s" % (filepath.path))
             self._configs[filepath.path] = call
+            self._configobjs[filepath.path] = cfg
         else:
             log.msg("Ignoring config update %s" % (filepath.path))
 
@@ -293,6 +342,7 @@ class WorkerService(Service):
                 pruneable.append(k)
         for k in pruneable:
             del self._configs[k]
+            del self._configobjs[k]
         log.msg("Tracking %d configurations, pruned %d" % (len(self._configs), len(pruneable)))
 
 

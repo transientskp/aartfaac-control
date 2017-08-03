@@ -7,6 +7,10 @@ from twisted.application import internet
 from aclient.controlprotocol import ControlFactory
 
 PROGRAMS = {
+    "nc": {
+        "cmd":['nc.sh'],
+        "env":os.environ
+    },
     "atv": {
         "cmd":['aartfaac-tv.py'],
         "env":os.environ

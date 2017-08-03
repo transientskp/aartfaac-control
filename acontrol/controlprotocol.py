@@ -44,7 +44,7 @@ class ControlProtocol(basic.LineReceiver):
 
     def start(self):
         log.msg("Starting `%s' with arguments: %s" % (self.factory.name, self.factory.argv))
-        self.sendLine('%s START %s' % (ControlProtocol.VERSION, self.factory.argv))
+        self.sendLine('%s START %s' % (ControlProtocol.VERSION, bytearray (self.factory.argv, 'utf-8')))
 
 
     def stop(self):

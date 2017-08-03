@@ -38,7 +38,7 @@ class Observation(object):
 
     # TODO: Check for aartfaac piggyback flag
     def is_valid(self):
-        return self.valid and self.antenna_array == "LBA" and hash(self) != None
+        return self.valid and self.antenna_array == "LBA"  or self.antenna_array == "HBA" and hash(self) != None
 
     def __str__(self):
         return "OBS - %s (%s)" % (self.antenna_set, (self.duration))

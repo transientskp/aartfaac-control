@@ -153,9 +153,24 @@ class Configuration(object):
     
     def correlators(self, obs):
         correlators = []
+
+        if "correlators" not in self._config["programs"]:
+            log.msg ('correlators: Not found')
+            return correlators
+
         configs = self._config["programs"]["correlators"]
-        pipelines = self._config["programs"]["pipelines"]["instances"]
-        npipelines = len(pipelines)/len(configs["instances"])
+
+        if "pipelines" in self._config["programs"]:
+            outputsink = self._config["programs"]["pipelines"]["instances"]
+            noutputsink= len(outputsink)/len(configs["instances"])
+
+        elif "vissinks" in self._config["programs"]:
+            outputsink = self._config["programs"]["vissinks"]["instances"]
+            noutputsink= len(outputsink)/len(configs["instances"])
+
+        else:
+            log.msg ("### No output sinks for correlator data specified! Aborting...")
+            return 
 
         for i,cfg in enumerate(configs["instances"]):
             address = cfg["address"].split(':')
@@ -164,7 +179,7 @@ class Configuration(object):
                 cfg["argv"] = {}
 
             outputs = []
-            for v in pipelines[i*npipelines:(i+1)*npipelines]:
+            for v in outputsink[i*noutputsink:(i+1)*noutputsink]:
                 ip, port = v["input"].split(':')
                 outputs.append("%s:%i" % (ip, int(port)))
 
@@ -193,6 +208,11 @@ class Configuration(object):
 
     def pipelines(self, obs):
         pipelines = []
+
+        if "pipelines" not in self._config["programs"]:
+            log.msg ('pipelines: Not found')
+            return pipelines
+
         configs = self._config["programs"]["pipelines"]
         nsubbands = len (self._config['subbands'])
 
@@ -201,7 +221,8 @@ class Configuration(object):
             
         imager = self._config["programs"]["imagers"]["instances"]
 
-        antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
+        # antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
+        antcfg = ["lba_outer"].index(obs.antenna_set.lower())
 
 
         for i,cfg in enumerate(configs["instances"]):
@@ -232,13 +253,19 @@ class Configuration(object):
     
     def imagers(self, obs):
         imagers = []
+
+        if "imagers" not in self._config["programs"]:
+            log.msg ('imagers: Not found')
+            return imagers
+
         configs = self._config["programs"]["imagers"]
 
         # Set station subbands, in case the hardware config has changed 
         # since the AARTFAAC configuration was applied.
         self.setstation_subbands ()
 
-        antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
+        # antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
+        antcfg = ["lba_outer"].index(obs.antenna_set.lower())
 
         for i,cfg in enumerate (configs["instances"]):
             address = cfg["address"].split(':')
@@ -269,8 +296,55 @@ class Configuration(object):
         return imagers 
             
 
+    def vissinks (self, obs):
+        vissinks = []
+
+        if "vissinks" not in self._config["programs"]:
+            log.msg ('vissinks: Not found')
+            return vissinks
+
+        configs = self._config["programs"]["vissinks"]
+        nsubbands = len (self._config['subbands'])
+
+        if nsubbands > len (configs['instances']):
+            print "Visibility Sinks (via nc) specified only for %d of %d \
+                    subbands." % (len (configs['instances']), nsubbands)
+            
+
+        for i,cfg in enumerate(configs["instances"]):
+            address = cfg["address"].split(':')
+            destaddr, port = cfg["input"].split(':')
+
+            if not cfg.has_key("argv"):
+                cfg["argv"] = {}
+
+            if not configs.has_key("argv"):
+                configs["argv"] = {}
+
+            argv = Configuration.merge(configs["argv"], cfg["argv"])
+            argv["port"] = port
+
+            # Break if we run out of specified subbands, 
+            # even if we have vissink specifications.
+            if i > nsubbands:
+                break;
+
+            output_filename = "/data/EoR-%s-Sb%d-%s.vis" % \
+             (obs.antenna_set.lower(), int(self._config['subbands'][i]),
+                 obs.start_time.strftime("%Y%m%d%H%M"))
+
+            cmd = "%s %s %s" % (destaddr, port, output_filename)
+            vissinks.append((cfg["name"], address[0], int(address[1]), cmd))
+
+        return vissinks
+
     def atv (self, obs):
         atv = []
+
+        if "atv" not in self._config["programs"]:
+            log.msg ('atv: Not found')
+            return atv
+
         configs = self._config["programs"]["atv"]
 
         for i,cfg in enumerate (configs["instances"]):
@@ -287,7 +361,12 @@ class Configuration(object):
 
         
     def __str__(self):
-        return "[CFG - %s]" % (self.start_time)
+        if "hba" in self._config:
+            antarray = "hba"
+        elif "lba" in self._config:
+            antarray = "lba"
+            
+        return "[CFG - %s %s]" % (antarray, self.start_time)
 
 
     def __cmp__(self, other):
