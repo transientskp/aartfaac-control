@@ -163,6 +163,11 @@ class WorkerService(Service):
             mlog.m("Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath))
             log.msg ("<-- OBSER: Starting Observation %s, Current config %s " % (obs, self._activeconfig.filepath))
 
+            # Set station subbands, in case the hardware config has changed 
+            # since the AARTFAAC configuration was applied.
+            log.msg ("<-- Imager: Checking subbands.")
+            self._activeconfig.setstation_subbands ()
+
             def pass_1N(result, V):
                 s = False
                 for v in result:
@@ -298,7 +303,6 @@ class WorkerService(Service):
             log.msg("<-- CONFIG: Applying AARTFAAC configuration %s" % (config))
             self._activeconfig = config
             self._email.updatelist(self._activeconfig.emaillist())
-            self._activeconfig.setstation_subbands ()
             log.msg("<-- !CONFIG: Set AARTFAAC configuration to %s" % (config))
         else:
             log.msg("<-- #CONFIG: Invalid config: %s" % config)

@@ -267,10 +267,6 @@ class Configuration(object):
 
         configs = self._config["programs"]["imagers"]
 
-        # Set station subbands, in case the hardware config has changed 
-        # since the AARTFAAC configuration was applied.
-        log.msg ("<-- Imager: Checking subbands.")
-        self.setstation_subbands ()
 
         # antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
         antcfg = ["lba_outer"].index(obs.antenna_set.lower())
