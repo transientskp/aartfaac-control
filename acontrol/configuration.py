@@ -124,7 +124,8 @@ class Configuration(object):
                 break
             else:
                 log.msg ("---> Station %s is already set.\n   \
-                Current sb: %s\n   Desired sb: %s" % (stname, currsdo, newsdo))
+                Current sb: %s\n   \
+                Desired sb: %s" % (stname, currsdo, newsdo))
 
         if do_setsub:
             log.msg(" ------ Setting SDO subbands: ------  ")
@@ -157,6 +158,8 @@ class Configuration(object):
         if "correlators" not in self._config["programs"]:
             log.msg ('correlators: Not found')
             return correlators
+        else:
+            log.msg ('<-- Found correlators in config file.')
 
         configs = self._config["programs"]["correlators"]
 
@@ -212,6 +215,8 @@ class Configuration(object):
         if "pipelines" not in self._config["programs"]:
             log.msg ('pipelines: Not found')
             return pipelines
+        else:
+            log.msg ('<-- Found pipelines in config file.')
 
         configs = self._config["programs"]["pipelines"]
         nsubbands = len (self._config['subbands'])
@@ -255,13 +260,16 @@ class Configuration(object):
         imagers = []
 
         if "imagers" not in self._config["programs"]:
-            log.msg ('imagers: Not found')
+            log.msg ('### imagers: Not found')
             return imagers
+        else:
+            log.msg ('<-- Found imager in config file.')
 
         configs = self._config["programs"]["imagers"]
 
         # Set station subbands, in case the hardware config has changed 
         # since the AARTFAAC configuration was applied.
+        log.msg ("<-- Imager: Checking subbands.")
         self.setstation_subbands ()
 
         # antcfg = ["lba_outer", "lba_inner", "lba_sparse_even", "lba_sparse_odd"].index(obs.antenna_set.lower())
@@ -300,8 +308,10 @@ class Configuration(object):
         vissinks = []
 
         if "vissinks" not in self._config["programs"]:
-            log.msg ('vissinks: Not found')
+            log.msg ('### vissinks: Not found')
             return vissinks
+        else:
+            log.msg ('<-- Found vissinks in config file.')
 
         configs = self._config["programs"]["vissinks"]
         nsubbands = len (self._config['subbands'])
@@ -344,6 +354,8 @@ class Configuration(object):
         if "atv" not in self._config["programs"]:
             log.msg ('atv: Not found')
             return atv
+        else:
+            log.msg ('<-- Found atv in config file.')
 
         configs = self._config["programs"]["atv"]
 

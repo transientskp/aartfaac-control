@@ -161,6 +161,7 @@ class WorkerService(Service):
         """
         if self._available:
             mlog.m("Using aartfaac configuration `%s'\n\n" % (self._activeconfig.filepath))
+            log.msg ("<-- OBSER: Starting Observation %s, Current config %s " % (obs, self._activeconfig.filepath))
 
             def pass_1N(result, V):
                 s = False
@@ -208,6 +209,7 @@ class WorkerService(Service):
             layer1 = [connector (*p) for p in self._activeconfig.imagers(obs)]
 
             if layer1:
+                log.msg ('<-- Initiating calibration pipeline.')
                 layer2 = defer.DeferredList(layer1, consumeErrors=True)
                 layer2.addCallback(pass_1N, self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs) + \
                                          self._activeconfig.vissinks (obs))
@@ -222,7 +224,7 @@ class WorkerService(Service):
             layer4 = defer.DeferredList([layer3], consumeErrors=True)
             layer4.addCallback(success)
         else:
-            log.msg("Skipping %s" % (obs))
+            log.msg("<-- Skipping %s" % (obs))
 
 
     def enqueueObservation(self, ignored, filepath, mask):
@@ -251,7 +253,7 @@ class WorkerService(Service):
                 ind = None
                 for k, v in self._configs.iteritems():
                     cfgtim = datetime.datetime.fromtimestamp(v.getTime())
-                    log.msg ('cfgtim: %s, obs time: %s' % (cfgtim, obs.start_time));
+                    log.msg ('    cfgtim: %s, obs time: %s' % (cfgtim, obs.start_time));
                     if cfgtim > obs.start_time:
                         break
                     timdel = obs.start_time - cfgtim
@@ -260,16 +262,19 @@ class WorkerService(Service):
                         ind = k;
                     
                 if ind:
-                    log.msg ('<-- Closest AARTFAAC config. (%s) is %s seconds before observation. key: %s' % 
+                    log.msg ('    Closest AARTFAAC config. (%s) is %s seconds before observation. key: %s' % 
                                 (str(self._configs[ind]), min_timdel.seconds, ind))
-                    log.msg ('<-- self._configobj keys: %s' % self._configobjs.keys())
-                    log.msg ('<-- self._configobj[ind] keys: %s' % self._configobjs[ind]._config.keys())
 
                     # Ignore this observation if no suitable config is found.
                     if not "hba" in self._configobjs[ind]._config:
                         call = None
-                        log.msg("Ignoring %s: mode: %s" % (filepath.path, self._configobjs[ind]._config["hba"]["modes"]))
+                        log.msg("    Ignoring config %s: mode: %s. Active config during obs. is not HBA."
+                            % (filepath.path, self._configobjs[ind]._config["hba"]["modes"]))
                         return
+                else:
+                    call = None
+                    log.msg("    Ignoring config %s: No suitable HBA AARTFAAC config found." % filepath.path)
+                    return
                     
                                    
             if key in self._parsets and self._parsets[key].active():
@@ -290,12 +295,13 @@ class WorkerService(Service):
         Prepare AARTFAAC telescope for upcomming observations
         """
         if config.is_valid():
+            log.msg("<-- CONFIG: Applying AARTFAAC configuration %s" % (config))
             self._activeconfig = config
             self._email.updatelist(self._activeconfig.emaillist())
             self._activeconfig.setstation_subbands ()
-            log.msg("Set AARTFAAC configuration to %s" % (config))
+            log.msg("<-- !CONFIG: Set AARTFAAC configuration to %s" % (config))
         else:
-            log.msg("Invalid config: %s" % config)
+            log.msg("<-- #CONFIG: Invalid config: %s" % config)
 
 
     def enqueueConfiguration(self, ignored, filepath, mask):
