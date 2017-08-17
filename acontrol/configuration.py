@@ -21,7 +21,11 @@ class Configuration(object):
     """
     def __init__(self, filepath):
         self.filepath = filepath
-        self._config = json.loads(open(filepath,'r').read())
+        try:
+            self._config = json.loads(open(filepath,'r').read())
+        except:
+            raise
+            
         self.start_time = datetime.datetime.now() + datetime.timedelta(seconds=2)
         if (self._config["starttime"] != "now"):
             ts = time.strptime(self._config["starttime"], "%Y-%m-%d %H:%M:%S")
@@ -291,7 +295,10 @@ class Configuration(object):
                     else:
                         outputs[i] = x + '/' + dirname
             argv["output"] = ','.join(outputs)
-            argv["subbands"] = ','.join (self._config['subbands'])
+
+            if "subbands" not in argv:
+                argv["subbands"] = ','.join (self._config['subbands'])
+
             argv["affinity"] = cfg["argv"]["affinity"]
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])

@@ -314,7 +314,14 @@ class WorkerService(Service):
         """
         call = None
         if fnmatch.fnmatch(filepath.basename(), self._aapattern):
-            cfg = Configuration(filepath.path)
+            try:
+                cfg = Configuration(filepath.path)
+            except Exception as e:
+                log.msg ("### Unable to create configuration object from provided config file!")
+                log.msg ('### %s' % str(e))
+                return
+
+                
             call = call_at(
                 cfg.start_time,
                 self.applyConfiguration,
