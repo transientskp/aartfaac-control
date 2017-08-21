@@ -14,6 +14,7 @@ setup(
     url='https://github.com/transientskp/aartfaac-control',
     packages=[
         'acontrol',
+        'acontrol.test',
         'aclient',
         'twisted'
     ],
