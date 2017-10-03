@@ -16,6 +16,7 @@ setup(
         'acontrol',
         'acontrol.test',
         'aclient',
+        'aclient.test',
         'twisted'
     ],
     scripts=[],
