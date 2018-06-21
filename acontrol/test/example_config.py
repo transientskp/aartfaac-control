@@ -6,10 +6,9 @@ EXAMPLE_CONFIG = """
 {
   "starttime": "now",
   "email": [
-    "folkerthuizinga@gmail.com",
     "antonia.rowlinson@gmail.com",
     "mk.kuiack@gmail.com",
-    "hsuyeep@gmail.com"
+    "a.shulevski@gmail.com"
   ],
   "lba": {
     "modes": ["lba_inner", "lba_outer", "lba_sparse_even", "lba_sparse_odd"]
