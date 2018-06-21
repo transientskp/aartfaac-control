@@ -342,9 +342,9 @@ class Configuration(object):
             if i > nsubbands:
                 break;
 
-            output_filename = "/data/EoR-%s-Sb%d-%s.vis" % \
-             (obs.antenna_set.lower(), int(self._config['subbands'][i]),
-                 obs.start_time.strftime("%Y%m%d%H%M"))
+            output_filename = "/data/SB%d-%s-%s.vis" % \
+             (int(self._config['subbands'][i]),
+                 obs.start_time.strftime("%Y%m%d%H%M"), obs.antenna_set.lower())
 
             cmd = "%s %s %s" % (destaddr, port, output_filename)
             vissinks.append((cfg["name"], address[0], int(address[1]), cmd))
