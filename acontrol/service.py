@@ -216,13 +216,11 @@ class WorkerService(Service):
             if layer1:
                 log.msg ('<-- Initiating calibration pipeline.')
                 layer2 = defer.DeferredList(layer1, consumeErrors=True)
-                layer2.addCallback(pass_1N, self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs) + \
-                                         self._activeconfig.vissinks (obs))
+                layer2.addCallback(pass_1N, self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs))
                 layer3 = defer.DeferredList([layer2], consumeErrors=True)
             else:
                 log.msg ('<-- Found no imagers in config file.')
-                layer2 = [connector (*p) for p in self._activeconfig.pipelines(obs) + self._activeconfig.atv(obs) + \
-                                         self._activeconfig.vissinks (obs)]
+                layer2 = [connector (*p) for p in self._activeconfig.vissinks(obs)]
                 layer3 = defer.DeferredList(layer2, consumeErrors=True)
 
             layer3.addCallback(pass_1N, self._activeconfig.correlators(obs))
