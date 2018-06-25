@@ -6,7 +6,10 @@ EXAMPLE_CONFIG = """
 {
   "starttime": "now",
   "email": [
+<<<<<<< HEAD
     "antonia.rowlinson@gmail.com",
+=======
+>>>>>>> 3d37e67d7966d3fc0c896e382765497c9720d329
     "kbharatgehlot@gmail.com",
     "mk.kuiack@gmail.com",
     "a.shulevski@gmail.com"
