@@ -6,6 +6,7 @@ EXAMPLE_CONFIG = """
 {
   "starttime": "now",
   "email": [
+    "antonia.rowlinson@gmail.com",
     "kbharatgehlot@gmail.com",
     "mk.kuiack@gmail.com",
     "a.shulevski@gmail.com"
