@@ -6,7 +6,7 @@ EXAMPLE_CONFIG = """
 {
   "starttime": "now",
   "email": [
-    "antonia.rowlinson@gmail.com",
+    "kbharatgehlot@gmail.com",
     "mk.kuiack@gmail.com",
     "a.shulevski@gmail.com"
   ],
@@ -14,15 +14,15 @@ EXAMPLE_CONFIG = """
     "modes": ["lba_inner", "lba_outer", "lba_sparse_even", "lba_sparse_odd"]
   },
   "bitmode": 16,
-  "subbands": ["166", "167", "185", "186", "194", "195", "320", "321", 
-               "210","211","212","213","235","236","237","238"],
+  "subbands": ["295", "296", "297", "298", "299", "300", "301", "302", 
+               "313","314","315","316","317","318","319","320"],
   "programs": {
     "correlators": {
       "argv": {
         "A": "0:6",
         "C": "63",
         "b": "16",
-        "d": "0",
+        "d": "1",
         "g": "0-9",
         "m": "9",
         "c": "256",
