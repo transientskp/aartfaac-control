@@ -252,7 +252,10 @@ class Configuration(object):
                 break;
 
             argv['subband'] = self._config['subbands'][i]
-            argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[0]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
+
+            for i in range(len(imager)):
+                if argv["subband"] in imager[i]["argv"]["subbands"]:
+                    argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[i]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
@@ -300,6 +303,7 @@ class Configuration(object):
                 argv["subbands"] = ','.join (self._config['subbands'])
 
             argv["affinity"] = cfg["argv"]["affinity"]
+            argv["port"] = port
 
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             imagers.append((cfg["name"], address[0], int(address[1]), cmd))
