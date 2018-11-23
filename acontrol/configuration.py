@@ -192,7 +192,11 @@ class Configuration(object):
 
             argv = Configuration.merge(configs["argv"], cfg["argv"])
             argv["o"] = ",".join(["tcp:%s" % (addr) for addr in outputs])
-            argv["r"] = obs.duration.seconds
+            #argv["r"] = obs.duration.seconds
+            #argv["D"] = (self.start_time + datetime.timedelta(minutes=2)).strftime('%Y-%m-%d_%H:%M:%S')
+            argv["r"] = (obs.duration - datetime.timedelta(minutes=2)).seconds
+            argv["D"] = ((obs.end_time - obs.duration) + datetime.timedelta(minutes=2)).strftime('%Y-%m-%d_%H:%M:%S')
+
             cmd = " ".join(["-%s %s" % (str(k), str(v)) for k,v in argv.iteritems()])
             correlators.append((cfg["name"], address[0], int(address[1]), cmd))
 
