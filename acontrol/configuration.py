@@ -256,11 +256,12 @@ class Configuration(object):
                 break;
 
             argv['subband'] = self._config['subbands'][i]
-
-            for i in range(len(imager)):
-                if argv["subband"] in imager[i]["argv"]["subbands"]:
-                    argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[i]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
-
+#            argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[0]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
+#           Enable for multiple imagers
+            for j in range(len(imager)):
+                if argv["subband"] in imager[j]["argv"]["subbands"]:
+                    argv["output"] = "tcp:%s,file:/data/%i-%s.cal" % (imager[j]["input"], int(argv["subband"]), obs.start_time.strftime("%Y%m%d%H%M"))
+#
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             pipelines.append((cfg["name"], address[0], int(address[1]), cmd))
 
@@ -303,12 +304,14 @@ class Configuration(object):
                         outputs[i] = x + '/' + dirname
             argv["output"] = ','.join(outputs)
 
-            if "subbands" not in argv:
+
+            if "subbands" not in cfg["argv"]:
                 argv["subbands"] = ','.join (self._config['subbands'])
 
             argv["affinity"] = cfg["argv"]["affinity"]
+#           Enable for multiple imagers
             argv["port"] = port
-
+#
             cmd = " ".join(["--%s=%s" % (str(k), str(v)) for k,v in argv.iteritems()])
             imagers.append((cfg["name"], address[0], int(address[1]), cmd))
 
